@@ -162,4 +162,140 @@ private:
     static void RenderActorInfo(ImDrawList* drawlist, const Vector2& screenPos, ImU32 color, const std::string& ActorName, float Dist);
 };
 
+
+// ==========================================
+// PROBLEM: Bitfelder haben keine Adresse!
+// ==========================================
+
+// Das funktioniert NICHT:
+// bool bCanBeDamaged : 1;  // Bitfeld!
+// &Controller->Character->bCanBeDamaged;  // ❌ Fehler!
+
+// ==========================================
+// LÖSUNG 1: Erweiterte PointerChecks mit Bitfeld-Support
+// ==========================================
+
+// PointerChecks.hpp - Erweiterte Version
+#pragma once
+#include <Windows.h>
+#include <cstdio>
+
+class PointerChecks {
+public:
+    // Bestehende Funktionen...
+    static inline bool IsReadable(void* ptr, size_t size = sizeof(void*)) {
+        if (!ptr) {
+            printf("[POINTER_CHECK] Null pointer detected\n");
+            return false;
+        }
+
+        MEMORY_BASIC_INFORMATION mbi;
+        if (VirtualQuery(ptr, &mbi, sizeof(mbi)) == 0) {
+            printf("[POINTER_CHECK] VirtualQuery failed for address: 0x%p\n", ptr);
+            return false;
+        }
+
+        if (mbi.State != MEM_COMMIT ||
+            !(mbi.Protect & (PAGE_READONLY | PAGE_READWRITE | PAGE_EXECUTE_READ | PAGE_EXECUTE_READWRITE))) {
+            printf("[POINTER_CHECK] Memory not accessible at address: 0x%p\n", ptr);
+            return false;
+        }
+        return true;
+    }
+
+    template<typename T>
+    static inline bool IsValidPtr(T* ptr, const char* name = "Unknown") {
+        if (!ptr) {
+            printf("[POINTER_CHECK] %s: Null pointer\n", name);
+            return false;
+        }
+
+        if (!IsReadable(ptr, sizeof(T))) {
+            printf("[POINTER_CHECK] %s: Pointer 0x%p not readable\n", name, ptr);
+            return false;
+        }
+        return true;
+    }
+
+    // ✅ NEU: Sichere Zuweisung für Bitfelder und normale Variablen
+    template<typename ObjectType, typename ValueType>
+    static inline bool SafeAssign(ObjectType* object, ValueType ObjectType::* member,
+        const ValueType& value, const char* name = "Unknown") {
+        if (!IsValidPtr(object, name)) {
+            return false;
+        }
+
+        __try {
+            object->*member = value;  // Direkte Zuweisung über Member-Pointer
+            printf("[POINTER_CHECK] %s: Successfully assigned value\n", name);
+            return true;
+        }
+        __except (EXCEPTION_EXECUTE_HANDLER) {
+            printf("[POINTER_CHECK] %s: Exception during assignment\n", name);
+            return false;
+        }
+    }
+
+    // ✅ NEU: Vereinfachte Bitfeld-Zuweisung
+    template<typename T>
+    static inline bool SafeBitfieldWrite(T* object, const char* name,
+        std::function<void(T*)> setter) {
+        if (!IsValidPtr(object, name)) {
+            return false;
+        }
+
+        __try {
+            setter(object);
+            printf("[POINTER_CHECK] %s: Bitfield successfully modified\n", name);
+            return true;
+        }
+        __except (EXCEPTION_EXECUTE_HANDLER) {
+            printf("[POINTER_CHECK] %s: Exception during bitfield modification\n", name);
+            return false;
+        }
+    }
+
+    // ✅ SafeRead für sichere Speicher-Lesevorgänge
+    template<typename T>
+    static inline bool SafeRead(void* address, T& output, const char* name = "Unknown") {
+        if (!IsReadable(address, sizeof(T))) {
+            printf("[POINTER_CHECK] %s: Cannot read from address 0x%p\n", name, address);
+            return false;
+        }
+
+        __try {
+            output = *reinterpret_cast<T*>(address);
+            printf("[POINTER_CHECK] %s: Successfully read from address 0x%p\n", name, address);
+            return true;
+        }
+        __except (EXCEPTION_EXECUTE_HANDLER) {
+            printf("[POINTER_CHECK] %s: Exception reading from address 0x%p\n", name, address);
+            return false;
+        }
+    }
+
+    // Standard SafeWrite für normale Pointer
+    template<typename T>
+    static inline bool SafeWrite(void* address, const T& value, const char* name = "Unknown") {
+        if (!IsReadable(address, sizeof(T))) {
+            printf("[POINTER_CHECK] %s: Cannot write to address 0x%p\n", name, address);
+            return false;
+        }
+
+        __try {
+            *reinterpret_cast<T*>(address) = value;
+            printf("[POINTER_CHECK] %s: Successfully wrote to address 0x%p\n", name, address);
+            return true;
+        }
+        __except (EXCEPTION_EXECUTE_HANDLER) {
+            printf("[POINTER_CHECK] %s: Exception writing to address 0x%p\n", name, address);
+            return false;
+        }
+    }
+};
+
+
+
+
+
 void DrawDebugText(SDK::UCanvas* Canvas);

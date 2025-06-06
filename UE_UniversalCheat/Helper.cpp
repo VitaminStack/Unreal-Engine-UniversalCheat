@@ -311,99 +311,194 @@ CheatOption::CheatOption(const std::string& name, std::function<void(bool)> acti
 // ✅ 1. Cheats initialisieren
 void Cheats::Initialize(SDK::APlayerController* Controller) {
     CheatList.clear();
-
     const SDK::EMovementMode DefaultMovementMode = SDK::EMovementMode::MOVE_Walking;
 
-    // ✅ Godmode
+    // Grundlegende Controller-Validierung
+    if (!PointerChecks::IsValidPtr(Controller, "Controller")) {
+        printf("[CHEATS] Controller pointer invalid - aborting initialization\n");
+        return;
+    }
+
+    // ✅ Godmode mit Pointer-Checks
     CheatList.emplace_back(
-        "Godmode",
+        "Godmode_Simple",
         [Controller](bool enable) {
-            if (Controller && Controller->Character) {
-                Controller->Character->bCanBeDamaged = !enable;  // Godmode aktivieren/deaktivieren
+            if (!PointerChecks::IsValidPtr(Controller, "Controller")) return;
+            if (!PointerChecks::IsValidPtr(Controller->Character, "Controller->Character")) return;
+
+            __try {
+                Controller->Character->bCanBeDamaged = !enable;
+                printf("[GODMODE_SIMPLE] %s successfully\n", enable ? "Enabled" : "Disabled");
+            }
+            __except (EXCEPTION_EXECUTE_HANDLER) {
+                printf("[GODMODE_SIMPLE] Exception occurred during assignment\n");
             }
         },
         [Controller]() {
-            if (Controller && Controller->Character) {
-                Controller->Character->bCanBeDamaged = true;     // Standard: Spieler kann Schaden nehmen
+            if (!PointerChecks::IsValidPtr(Controller, "Controller")) return;
+            if (!PointerChecks::IsValidPtr(Controller->Character, "Controller->Character")) return;
+
+            __try {
+                Controller->Character->bCanBeDamaged = true;
+                printf("[GODMODE_SIMPLE] Reset to default successfully\n");
+            }
+            __except (EXCEPTION_EXECUTE_HANDLER) {
+                printf("[GODMODE_SIMPLE] Exception occurred during reset\n");
             }
         }
     );
-    // ✅ Flyhack definieren
+
+    // ✅ Flyhack mit Pointer-Checks
     CheatList.emplace_back(
         "Flyhack",
-        [Controller](bool enable) {
-            if (Controller && Controller->Character && Controller->Character->CharacterMovement) {
-                SDK::UCharacterMovementComponent* Movement = Controller->Character->CharacterMovement;
+        [Controller, DefaultMovementMode](bool enable) {
+            if (!PointerChecks::IsValidPtr(Controller, "Controller")) return;
+            if (!PointerChecks::IsValidPtr(Controller->Character, "Controller->Character")) return;
+            if (!PointerChecks::IsValidPtr(Controller->Character->CharacterMovement, "CharacterMovement")) return;
 
+            SDK::UCharacterMovementComponent* Movement = Controller->Character->CharacterMovement;
+
+            __try {
                 if (enable) {
                     Movement->SetMovementMode(SDK::EMovementMode::MOVE_Flying, 5);
-                    FlyhackActive = true;  // Aktiviert Flyhack-Logik
+                    FlyhackActive = true;
+                    printf("[FLYHACK] Enabled successfully\n");
                 }
                 else {
                     Movement->SetMovementMode(DefaultMovementMode, 0);
-                    FlyhackActive = false; // Deaktiviert Flyhack-Logik
+                    FlyhackActive = false;
+                    printf("[FLYHACK] Disabled successfully\n");
                 }
             }
+            __except (EXCEPTION_EXECUTE_HANDLER) {
+                printf("[FLYHACK] Exception occurred during SetMovementMode\n");
+            }
         },
-        [Controller]() {
-            if (Controller && Controller->Character && Controller->Character->CharacterMovement) {
+        [Controller, DefaultMovementMode]() {
+            if (!PointerChecks::IsValidPtr(Controller, "Controller")) return;
+            if (!PointerChecks::IsValidPtr(Controller->Character, "Controller->Character")) return;
+            if (!PointerChecks::IsValidPtr(Controller->Character->CharacterMovement, "CharacterMovement")) return;
+
+            __try {
                 Controller->Character->CharacterMovement->SetMovementMode(DefaultMovementMode, 0);
                 FlyhackActive = false;
+                printf("[FLYHACK] Reset to default successfully\n");
+            }
+            __except (EXCEPTION_EXECUTE_HANDLER) {
+                printf("[FLYHACK] Exception occurred during reset\n");
             }
         }
     );
-    // ✅ Disable Required Ammo For Shoot
+
+    // ✅ Unlimited Ammo mit umfassenden Pointer-Checks
     CheatList.emplace_back(
         "Unl Ammo",
         [Controller](bool enable) {
-            if (Controller && Controller->Character) {
-                uintptr_t characterBase = reinterpret_cast<uintptr_t>(Controller->Character);
-                uintptr_t* itemInHandsPtr = *reinterpret_cast<uintptr_t**>(characterBase + 0x17D8);
+            if (!PointerChecks::IsValidPtr(Controller, "Controller")) return;
+            if (!PointerChecks::IsValidPtr(Controller->Character, "Controller->Character")) return;
 
-                if (itemInHandsPtr) {
-                    uintptr_t requiredAmmoForShootAddress = reinterpret_cast<uintptr_t>(itemInHandsPtr) + 0xAF8;
-                    int* requiredAmmoFlag = reinterpret_cast<int*>(requiredAmmoForShootAddress);
+            uintptr_t characterBase = reinterpret_cast<uintptr_t>(Controller->Character);
+            uintptr_t itemInHandsPtrAddress = characterBase + 0x17D8;
 
-                    uintptr_t SpreadAdd = reinterpret_cast<uintptr_t>(itemInHandsPtr) + 0x1381;
-                    byte* Spread = reinterpret_cast<byte*>(SpreadAdd);
-                    
-                    uintptr_t durabilityAdd = reinterpret_cast<uintptr_t>(itemInHandsPtr) + 0x13f4;
-                    float* durability = reinterpret_cast<float*>(durabilityAdd);
+            // Prüfe ob ItemInHands Pointer-Adresse lesbar ist
+            if (!PointerChecks::IsReadable(reinterpret_cast<void*>(itemInHandsPtrAddress), sizeof(uintptr_t))) {
+                printf("[UNL_AMMO] ItemInHands pointer address not readable\n");
+                return;
+            }
 
-                    *durability = 0.0f;
-                    *Spread = enable ? 0 : 1;
-                    *requiredAmmoFlag = enable ? 0 : 1;  // ✅ 0 = Deaktiviert, 1 = Aktiviert
+            uintptr_t itemInHandsPtr;
+            if (!PointerChecks::SafeRead(reinterpret_cast<void*>(itemInHandsPtrAddress), itemInHandsPtr, "ItemInHands Pointer")) {
+                return;
+            }
+
+            if (!itemInHandsPtr) {
+                printf("[UNL_AMMO] ItemInHands is null - no weapon equipped\n");
+                return;
+            }
+
+            // Validiere ItemInHands Objekt
+            if (!PointerChecks::IsReadable(reinterpret_cast<void*>(itemInHandsPtr), 0x1400)) {
+                printf("[UNL_AMMO] ItemInHands object not fully readable\n");
+                return;
+            }
+
+            // Adressen berechnen
+            uintptr_t requiredAmmoAddress = itemInHandsPtr + 0xAF8;
+            uintptr_t spreadAddress = itemInHandsPtr + 0x1381;
+            uintptr_t durabilityAddress = itemInHandsPtr + 0x13f4;
+
+            // RequiredAmmo Flag
+            if (PointerChecks::SafeWrite(reinterpret_cast<void*>(requiredAmmoAddress),
+                enable ? 0 : 1, "RequiredAmmoFlag")) {
+                printf("[UNL_AMMO] RequiredAmmo flag %s\n", enable ? "disabled" : "enabled");
+            }
+
+            // Spread
+            if (PointerChecks::SafeWrite(reinterpret_cast<void*>(spreadAddress),
+                static_cast<byte>(enable ? 0 : 1), "Spread")) {
+                printf("[UNL_AMMO] Spread %s\n", enable ? "disabled" : "enabled");
+            }
+
+            // Durability (nur wenn aktiviert)
+            if (enable) {
+                if (PointerChecks::SafeWrite(reinterpret_cast<void*>(durabilityAddress),
+                    0.0f, "Durability")) {
+                    printf("[UNL_AMMO] Durability set to 0.0\n");
                 }
             }
         },
         [Controller]() {
-            if (Controller && Controller->Character) {
-                uintptr_t characterBase = reinterpret_cast<uintptr_t>(Controller->Character);
-                uintptr_t* itemInHandsPtr = *reinterpret_cast<uintptr_t**>(characterBase + 0x17D8);
+            if (!PointerChecks::IsValidPtr(Controller, "Controller")) return;
+            if (!PointerChecks::IsValidPtr(Controller->Character, "Controller->Character")) return;
 
-                if (itemInHandsPtr) {
-                    uintptr_t requiredAmmoForShootAddress = reinterpret_cast<uintptr_t>(itemInHandsPtr) + 0xAF8;
-                    int* requiredAmmoFlag = reinterpret_cast<int*>(requiredAmmoForShootAddress);
+            uintptr_t characterBase = reinterpret_cast<uintptr_t>(Controller->Character);
+            uintptr_t itemInHandsPtrAddress = characterBase + 0x17D8;
 
-                    *requiredAmmoFlag = 1;  // ✅ Standardmäßig aktivieren
-                }
+            uintptr_t itemInHandsPtr;
+            if (!PointerChecks::SafeRead(reinterpret_cast<void*>(itemInHandsPtrAddress), itemInHandsPtr, "ItemInHands Pointer Reset")) {
+                return;
+            }
+
+            if (!itemInHandsPtr) {
+                printf("[UNL_AMMO] Reset: ItemInHands is null\n");
+                return;
+            }
+
+            uintptr_t requiredAmmoAddress = itemInHandsPtr + 0xAF8;
+            if (PointerChecks::SafeWrite(reinterpret_cast<void*>(requiredAmmoAddress), 1, "RequiredAmmoFlag Reset")) {
+                printf("[UNL_AMMO] Reset to default successfully\n");
             }
         }
     );
+    printf("[CHEATS] Initialization completed with %zu cheats loaded\n", CheatList.size());
+
 }
 // ✅ 2. Cheats anwenden (nur bei Statusänderung)
 void Cheats::ApplyCheats() {
     SDK::UEngine* Engine = SDK::UEngine::GetEngine();
+    if (!PointerChecks::IsValidPtr(Engine, "UEngine")) return;
+
     SDK::UWorld* World = SDK::UWorld::GetWorld();
-    SDK::APlayerController* Controller = World->OwningGameInstance->LocalPlayers[0]->PlayerController;
+    if (!PointerChecks::IsValidPtr(World, "UWorld")) return;
+
+    // World->OwningGameInstance
+    if (!PointerChecks::IsValidPtr(World->OwningGameInstance, "OwningGameInstance")) return;
+
+    // LocalPlayers
+    auto& LocalPlayers = World->OwningGameInstance->LocalPlayers;
+    if (LocalPlayers.Num() <= 0 || !PointerChecks::IsValidPtr(LocalPlayers[0], "LocalPlayer[0]")) return;
+
+
+    SDK::APlayerController* Controller = LocalPlayers[0]->PlayerController;
+    if (!PointerChecks::IsValidPtr(Controller, "PlayerController")) return;
 
     for (auto& cheat : CheatList) {
         if (cheat.Enabled != cheat.LastState) {
+            // ToggleAction sollte robust sein, ansonsten extra PointerChecks hier im Action-Objekt
             cheat.ToggleAction(cheat.Enabled);
             cheat.LastState = cheat.Enabled;
         }
     }
-
     // ✅ Flyhack-Steuerung anwenden, wenn aktiv
     if (FlyhackActive) {
         FlyhackControl(Controller);
@@ -436,34 +531,29 @@ void Cheats::ActivateCheat(const std::string& cheatName, bool enable) {
 }
 // ✅ 6. Flyhack-Steuerung (Velocity anpassen)
 void Cheats::FlyhackControl(SDK::APlayerController* Controller) {
-    if (!Controller || !Controller->Character || !Controller->Character->CharacterMovement)
-        return;
+    if (!PointerChecks::IsValidPtr(Controller, "Controller")) return;
+    if (!PointerChecks::IsValidPtr(Controller->Character, "Controller->Character")) return;
+    if (!PointerChecks::IsValidPtr(Controller->Character->CharacterMovement, "CharacterMovement")) return;
 
     SDK::UCharacterMovementComponent* Movement = Controller->Character->CharacterMovement;
-    SDK::FVector Velocity = Controller->Character->CharacterMovement->Velocity;
+    SDK::FVector Velocity = Movement->Velocity; // Velocity ist Value-Type, daher direkt ok.
+    float Speed = 600.0f;
+    float BoostMultiplier = 6.0f;
 
-    float Speed = 600.0f;  // Standardgeschwindigkeit
-    float BoostMultiplier = 6.0f;  // Geschwindigkeitserhöhung bei Shift
-
-    // ✅ Shift (schneller vorwärts in Blickrichtung)
     if (GetAsyncKeyState(VK_SHIFT) & 0x8000) {
+        if (!PointerChecks::IsValidPtr(Controller->PlayerCameraManager, "PlayerCameraManager")) return;
         SDK::FVector ForwardVector = Controller->PlayerCameraManager->GetActorForwardVector();
-        Velocity += ForwardVector * Speed * BoostMultiplier * 0.056f; // 0.016f ~ 60 FPS Tick
+        Velocity += ForwardVector * Speed * BoostMultiplier * 0.056f;
     }
-
-    // ✅ Leertaste (nach oben)
     if (GetAsyncKeyState(VK_SPACE) & 0x8000) {
         Velocity.Z += Speed * 0.056f;
     }
-
-    // ✅ Strg (nach unten)
     if (GetAsyncKeyState(VK_CONTROL) & 0x8000) {
         Velocity.Z -= Speed * 0.036f;
     }
-
-    // ✅ Velocity anwenden
     Movement->Velocity = Velocity;
 }
+
 bool Cheats::IsReadable(void* ptr) {
     MEMORY_BASIC_INFORMATION mbi;
     return VirtualQuery(ptr, &mbi, sizeof(mbi)) &&
@@ -572,11 +662,11 @@ bool Raycaster::CustomLineTrace(SDK::UWorld* World, const SDK::FVector& Start, c
         SDK::FVector ActorLocation = Actor->K2_GetActorLocation();
         float DistanceToRay = VectorUtils::CalculateDistanceToRay(Start, End, ActorLocation);
 
-        if (DistanceToRay <= CollisionThreshold) {
+        /*if (DistanceToRay <= CollisionThreshold) {
             OutHit.Location = SDK::FVector_NetQuantize(ActorLocation);
             *reinterpret_cast<SDK::AActor**>(&OutHit.Actor) = Actor;
             return true;
-        }
+        }*/
     }
     return false;
 }
