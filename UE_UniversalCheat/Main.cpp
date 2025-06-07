@@ -4,6 +4,7 @@
 #include "SDK/Engine_classes.hpp"
 #include "OverlayCord.h"
 #include "Overlay.h"
+#include "DXHook.h"
 
 // Basic.cpp was added to the VS project
 // Engine_functions.cpp was added to the VS project
@@ -13,7 +14,10 @@ bool MainHacking = false;
 
 bool ImGUIDiscordRender = false;
 bool DiscordRender = false;
-bool TransRender = true;
+bool TransRender = false;
+bool DXRender = true;
+
+DX12Hook* g_pDXHookInstance = nullptr;
 
 void OpenConsole() {
     /* Code to open a console window */
@@ -22,7 +26,6 @@ void OpenConsole() {
     freopen_s(&Dummy, "CONOUT$", "w", stdout);
     freopen_s(&Dummy, "CONIN$", "r", stdin);
 }
-
 
 DWORD WINAPI OverlayThread(LPVOID lpParameter)
 {
@@ -42,7 +45,7 @@ DWORD WINAPI OverlayThread(LPVOID lpParameter)
         }
 
     }
-    if (DiscordRender)
+    else if (DiscordRender)
     {
         printf("[>] Searching for target window...\n");
         const char* targetExe = "SCUM.exe";
@@ -73,13 +76,42 @@ DWORD WINAPI OverlayThread(LPVOID lpParameter)
         printf("[>] Cleaning up...\n");
         OverlayCord::Communication::DisconnectFromProcess(processInfo);
         printf("[+] Disconnected\n");
-        
+
     }
-    if (TransRender)
+    else if (TransRender)
     {
         RenderOverlay();
     }
-    
+    else if (DXRender)
+    {
+        // Neuen Hook-Context global verfügbar machen
+        static DX12Hook* pDX12Hook = nullptr;
+        if (!pDX12Hook) {
+            pDX12Hook = new DX12Hook();
+            if (!pDX12Hook->Init()) {
+                printf("[DX12Hook] DX12 initialization failed!\n");
+                delete pDX12Hook;
+                pDX12Hook = nullptr;
+                return -1;
+            }
+            printf("[DX12Hook] Hook successfully initialized!\n");
+        }
+
+        // Hauptloop, läuft bis DLLrunning == false
+        while (DLLrunning) {
+            Sleep(100);
+        }
+
+        // Cleanup & Unhook
+        if (pDX12Hook) {
+            pDX12Hook->Shutdown();
+            delete pDX12Hook;
+            pDX12Hook = nullptr;
+            printf("[DX12Hook] Shutdown & Unhooked.\n");
+        }
+    }
+
+
 
     return 0;
 }
@@ -88,7 +120,7 @@ DWORD MainThread(HMODULE Module)
 {
     OpenConsole();
 
-    
+
     if (MainHacking)
     {
         SDK::UEngine* Engine = SDK::UEngine::GetEngine();
@@ -121,7 +153,7 @@ DWORD MainThread(HMODULE Module)
                 continue;
 
             SDK::APawn* Pawn = static_cast<SDK::APawn*>(Actor);
-            
+
         }
 
         SDK::UInputSettings::GetDefaultObj()->ConsoleKeys[0].KeyName = SDK::UKismetStringLibrary::Conv_StringToName(L"F2");
@@ -130,11 +162,11 @@ DWORD MainThread(HMODULE Module)
         Engine->GameViewport->ViewportConsole = static_cast<SDK::UConsole*>(NewObject);
 
     }
-       
+
 
     while (DLLrunning) {
-        
-        
+
+
 
 
         // Beenden der DLL durch Tastendruck

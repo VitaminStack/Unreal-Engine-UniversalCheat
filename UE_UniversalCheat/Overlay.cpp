@@ -10,7 +10,8 @@ ID3D11RenderTargetView* g_mainRenderTargetView = nullptr;
 
 int ValidEntsLevel;
 int AllEntsLevel;
-static bool PawnFilterEnabled = false;
+static bool PawnFilterEnabled = true;
+static bool vsyncEnabled = false;
 
 int Screen_w = 2560;
 int Screen_h = 1440;
@@ -220,7 +221,6 @@ void RenderOverlay()
             }
         }
 
-
         // ✅ Cheats initialisieren (nur einmal)
         static bool initialized = false;
         if (!initialized) {
@@ -276,24 +276,25 @@ void RenderOverlay()
             ImGui::EndCombo();
         }
         ImGui::Text("All Entities: %d", AllEntsLevel);
-        ImGui::Text("Valid Entities: %d", ValidEntsLevel);                
-        fpsLimiter.setTargetFPS(fps);        
+        ImGui::Text("Valid Entities: %d", ValidEntsLevel);
+        fpsLimiter.setTargetFPS(fps);
         ImGui::Checkbox("Render only Pawns", &PawnFilterEnabled);
+        ImGui::Checkbox("Enable VSync", &vsyncEnabled);
         for (auto& cheat : Cheese::GetCheeseList()) {
             if (ImGui::Checkbox(cheat.Name.c_str(), &cheat.Enabled)) {
                 cheat.ToggleAction(cheat.Enabled);
             }
         }
         ImGui::ColorEdit4("color", (float*)&clear_color);
-        ImGui::End(); 
+        ImGui::End();
 
-               
-        
+
+
         SDK::ULevel* CurrentLevel = LevelArr[selectedLevelIndex];
         SDK::TArray<SDK::AActor*>* ActiveActorArray = reinterpret_cast<SDK::TArray<SDK::AActor*>*>(
             reinterpret_cast<uintptr_t>(CurrentLevel) + static_cast<uintptr_t>(selectedArrayOffset)
             );
-                      
+
         AllEntsLevel = 0;
         ValidEntsLevel = 0;
         static Cam gameCam;
@@ -327,7 +328,7 @@ void RenderOverlay()
 
         ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
 
-        g_pSwapChain->Present(0, 0);
+        g_pSwapChain->Present(vsyncEnabled ? 1 : 0, 0);
     }
 
     // **Schließe Overlay korrekt**
