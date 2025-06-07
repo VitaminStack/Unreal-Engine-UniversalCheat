@@ -1,0 +1,12 @@
+﻿################################################################################
+# Diese .gitignore-Datei wurde von Microsoft(R) Visual Studio automatisch erstellt.
+################################################################################
+
+/.vs
+/UE_UniversalCheat/SDK
+/UE_UniversalCheat/x64
+/UE_UniversalCheat/UnrealContainers.hpp
+/UE_UniversalCheat/SDK.hpp
+/UE_UniversalCheat/PropertyFixup.hpp
+/UE_UniversalCheat/NameCollisions.inl
+/x64

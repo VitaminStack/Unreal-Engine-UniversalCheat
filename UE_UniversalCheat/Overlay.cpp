@@ -286,29 +286,7 @@ void RenderOverlay()
         ImGui::ColorEdit4("color", (float*)&clear_color);
         ImGui::End(); 
 
-        
-        bool testing = false;
-        if (testing)
-        {
-            UC::TArray<SDK::AMatineeActor*> Components = World->NetworkManager->ControllingMatineeActors;
-            for (SDK::AMatineeActor* Component : Components) {
-                if (!Component) continue;
-                SDK::FVector actorPos = Component->RootComponent->RelativeLocation;
-                float fov = MyController->PlayerCameraManager->GetFOVAngle();
-                SDK::FVector camPos = MyController->PlayerCameraManager->GetCameraLocation();
-                SDK::FRotator rotation = MyController->PlayerCameraManager->GetCameraRotation();
-
-                std::string Name = Component->GetFullName();
-
-                Vector2 screenPos;
-                if (!UEWorldToScreen(Vector3(actorPos.X, actorPos.Y, actorPos.Z), screenPos,
-                    Vector3(rotation.Pitch, rotation.Yaw, rotation.Roll),
-                    Vector3(camPos.X, camPos.Y, camPos.Z), fov, 1440, 2560)) {
-                    return;
-                }
-                drawlist->AddText(ImVec2(CalcMiddlePos(screenPos.x, Name.c_str()), screenPos.y), IM_COL32(255, 0, 0, 255), Name.c_str());
-            }
-        }
+               
         
         SDK::ULevel* CurrentLevel = LevelArr[selectedLevelIndex];
         SDK::TArray<SDK::AActor*>* ActiveActorArray = reinterpret_cast<SDK::TArray<SDK::AActor*>*>(
