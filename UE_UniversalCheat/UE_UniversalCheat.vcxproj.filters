@@ -41,6 +41,9 @@
     <ClCompile Include="OverlayCord.cpp">
       <Filter>Overlay</Filter>
     </ClCompile>
+    <ClCompile Include="Cheese.cpp">
+      <Filter>Helper</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ImGui\imconfig.h">
@@ -78,6 +81,12 @@
     </ClInclude>
     <ClInclude Include="OverlayCord.h">
       <Filter>Overlay</Filter>
+    </ClInclude>
+    <ClInclude Include="ConfigManager.h">
+      <Filter>Helper</Filter>
+    </ClInclude>
+    <ClInclude Include="Cheese.h">
+      <Filter>Helper</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

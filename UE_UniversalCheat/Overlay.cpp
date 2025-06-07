@@ -10,7 +10,7 @@ ID3D11RenderTargetView* g_mainRenderTargetView = nullptr;
 
 int ValidEntsLevel;
 int AllEntsLevel;
-
+static bool PawnFilterEnabled = false;
 
 int Screen_w = 2560;
 int Screen_h = 1440;
@@ -224,9 +224,9 @@ void RenderOverlay()
         // ✅ Cheats initialisieren (nur einmal)
         static bool initialized = false;
         if (!initialized) {
-            Cheats::Initialize(MyController);
-            Cheats::ActivateCheat("Godmode", true);
-            Cheats::ActivateCheat("Flyhack", false);
+            Cheese::Initialize(MyController);
+            Cheese::ActivateCheese("Godmode", true);
+            Cheese::ActivateCheese("Flyhack", false);
             initialized = true;
         }
 
@@ -277,8 +277,9 @@ void RenderOverlay()
         }
         ImGui::Text("All Entities: %d", AllEntsLevel);
         ImGui::Text("Valid Entities: %d", ValidEntsLevel);                
-        fpsLimiter.setTargetFPS(fps);
-        for (auto& cheat : Cheats::GetCheatList()) {
+        fpsLimiter.setTargetFPS(fps);        
+        ImGui::Checkbox("Render only Pawns", &PawnFilterEnabled);
+        for (auto& cheat : Cheese::GetCheeseList()) {
             if (ImGui::Checkbox(cheat.Name.c_str(), &cheat.Enabled)) {
                 cheat.ToggleAction(cheat.Enabled);
             }
@@ -295,20 +296,19 @@ void RenderOverlay()
                       
         AllEntsLevel = 0;
         ValidEntsLevel = 0;
+        static Cam gameCam;
+        gameCam.UpdateCam(MyController->PlayerCameraManager);
         for (int i = 0; i < ActiveActorArray->Num(); i++) {
-            if (i >= 0 && i < ActiveActorArray->Num()) {
-                SDK::AActor* Actor = (*ActiveActorArray)[i];
-                if (Actor) {
-                    AllEntsLevel++;
-                    if (SimpleESP::DrawActorESP(Actor, MyController, drawlist, Distcap))
-                    {
-                        ValidEntsLevel++;
-                    }
+            SDK::AActor* Actor = (*ActiveActorArray)[i];
+            if (Actor) {
+                AllEntsLevel++;
+                if (SimpleESP::DrawActorESP(Actor, gameCam, drawlist, Distcap, PawnFilterEnabled)) {
+                    ValidEntsLevel++;
                 }
             }
         }
 
-        Cheats::ApplyCheats();
+        Cheese::ApplyCheese();
 
         // ✅ Rendering
         float TransparentColor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };

@@ -8,6 +8,7 @@
 #pragma comment(lib, "dwmapi.lib")
 #include "Dwmapi.h"
 #include "Helper.h"
+#include "Cheese.h"
 
 
 // DirectX11 Variablen
