@@ -19,8 +19,11 @@ bool MainHacking = false;
 bool ImGUIDiscordRender = false;
 bool DiscordRender = false;
 bool TransRender = false;
-bool HookRender = true;
 
+
+//HOOKRENDERING
+bool HookRender = true;
+RenderingBackend_t RenderModule = RenderingBackend_t::DIRECTX11;
 
 void OpenConsole()
 {
@@ -119,7 +122,6 @@ DWORD WINAPI OverlayThread(LPVOID lpParameter)
     else if (HookRender)
     {
         LOG_INFO("HookRender wird gestartet...");
-        printf("[+] Rendering backend: %s\n", U::RenderingBackendToStr());
         if (U::GetRenderingBackend() == NONE) {
             LOG_INFO("[!] Looks like you forgot to set a backend. Will unload after pressing enter...");
             std::cin.get();
@@ -222,12 +224,12 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD reason, LPVOID lpReserved)
 
     if (reason == DLL_PROCESS_ATTACH) {
         // Setze Rendering-Backend direkt hier, ODER später per Config/Detection
-        U::SetRenderingBackend(RenderingBackend_t::DIRECTX11); // Oder dynamisch nach Bedarf/Detection
+        U::SetRenderingBackend(RenderModule); // Oder dynamisch nach Bedarf/Detection
 
         // Konsole+Logger zentral initialisieren
         OpenConsole();
         LOG_INFO("DLL_PROCESS_ATTACH - Threads werden gestartet");
-        printf("[+] Rendering backend: %s\n", U::RenderingBackendToStr());
+        printf("[+] Rendering backend: %s\n", U::RenderingBackendToStr(RenderModule));
 
         if (U::GetRenderingBackend() == NONE) {
             LOG_ERROR("Kein Rendering-Backend gesetzt. DLL wird nicht weiter ausgeführt.");

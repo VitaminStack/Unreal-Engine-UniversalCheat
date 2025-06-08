@@ -3,6 +3,16 @@
 #include <dxgi.h>
 
 #include "utils.hpp"
+#include <vector>
+#include <string>
+#include <psapi.h>
+#include "../../Helper/Logger.h"
+#include "../backend/dx9/hook_directx9.hpp"
+#include "../backend/dx10/hook_directx10.hpp"
+#include "../backend/dx11/hook_directx11.hpp"
+#include "../backend/dx12/hook_directx12.hpp"
+#include "../backend/opengl/hook_opengl.hpp"
+#include "../backend/vulkan/hook_vulkan.hpp"
 
 #define RB2STR(x) case x: return #x
 
@@ -40,20 +50,59 @@ namespace Utils {
 		return g_eRenderingBackend;
 	}
 
-	const char* RenderingBackendToStr( ) {
-		RenderingBackend_t eRenderingBackend = GetRenderingBackend( );
 
-		switch (eRenderingBackend) {
-			RB2STR(DIRECTX9);
-			RB2STR(DIRECTX10);
-			RB2STR(DIRECTX11);
-			RB2STR(DIRECTX12);
+	std::vector<std::pair<RenderingBackend_t, std::wstring>> ListLoadedRenderModules()
+	{
+		std::vector<std::pair<RenderingBackend_t, std::wstring>> result;
 
-			RB2STR(OPENGL);
-			RB2STR(VULKAN);
+		HMODULE hMods[1024];
+		DWORD cbNeeded;
+		HANDLE hProcess = GetCurrentProcess();
+
+		if (EnumProcessModules(hProcess, hMods, sizeof(hMods), &cbNeeded)) {
+			for (unsigned int i = 0; i < (cbNeeded / sizeof(HMODULE)); i++) {
+				wchar_t szModName[MAX_PATH] = { 0 };
+				if (GetModuleFileNameExW(hProcess, hMods[i], szModName, MAX_PATH)) {
+					std::wstring mod = szModName;
+					if (mod.find(L"d3d9.dll") != std::wstring::npos) result.emplace_back(DIRECTX9, mod);
+					if (mod.find(L"d3d10.dll") != std::wstring::npos) result.emplace_back(DIRECTX10, mod);
+					if (mod.find(L"d3d11.dll") != std::wstring::npos) result.emplace_back(DIRECTX11, mod);
+					if (mod.find(L"d3d12.dll") != std::wstring::npos) result.emplace_back(DIRECTX12, mod);
+					if (mod.find(L"opengl32.dll") != std::wstring::npos) result.emplace_back(OPENGL, mod);
+					if (mod.find(L"vulkan-1.dll") != std::wstring::npos) result.emplace_back(VULKAN, mod);
+				}
+			}
 		}
+		return result;
+	}
+	void LogLoadedRenderModules()
+	{
+		auto mods = ListLoadedRenderModules();
+		for (const auto& m : mods) {
+			LOG_INFO_ANY("Render-API Modul geladen: ", Logger::ws2s(m.second), " (", RenderingBackendToStr(m.first), ")");
+		}
+		if (mods.empty())
+			LOG_WARN("Keine bekannten Render-API-Module gefunden!");
+	}
+	void SetupAllHooks(HWND hWnd)
+	{
+		LogLoadedRenderModules();
 
-		return "NONE/UNKNOWN";
+		// Jeder Hook-Init ist gegen doppelte Initialisierung/Fehler geschützt!
+		try { DX9::Hook(hWnd);   LOG_INFO("DX9-Hook versucht."); }
+		catch (...) {}
+		try { DX10::Hook(hWnd);  LOG_INFO("DX10-Hook versucht."); }
+		catch (...) {}
+		try { DX11::Hook(hWnd);  LOG_INFO("DX11-Hook versucht."); }
+		catch (...) {}
+		try { DX12::Hook(hWnd);  LOG_INFO("DX12-Hook versucht."); }
+		catch (...) {}
+		try { GL::Hook(hWnd);    LOG_INFO("OpenGL-Hook versucht."); }
+		catch (...) {}
+		try { VK::Hook(hWnd);    LOG_INFO("Vulkan-Hook versucht."); }
+		catch (...) {}
+
+		LOG_INFO("Alle möglichen Hooks gesetzt.");
 	}
 
 	HWND GetProcessWindow( ) {

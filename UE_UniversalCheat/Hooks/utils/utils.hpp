@@ -15,7 +15,19 @@ enum RenderingBackend_t {
 namespace Utils {
 	void SetRenderingBackend(RenderingBackend_t eRenderingBackend);
 	RenderingBackend_t GetRenderingBackend( );
-	const char* RenderingBackendToStr( );
+	inline const char* RenderingBackendToStr(RenderingBackend_t backend)
+	{
+		switch (backend)
+		{
+		case DIRECTX9:   return "DirectX 9";
+		case DIRECTX10:  return "DirectX 10";
+		case DIRECTX11:  return "DirectX 11";
+		case DIRECTX12:  return "DirectX 12";
+		case OPENGL:     return "OpenGL";
+		case VULKAN:     return "Vulkan";
+		default:         return "NONE/UNKNOWN";
+		}
+	}
 
 	HWND GetProcessWindow( );
 	void UnloadDLL( );
@@ -23,6 +35,8 @@ namespace Utils {
 	HMODULE GetCurrentImageBase( );
 
 	int GetCorrectDXGIFormat(int eCurrentFormat);
+
+	void SetupAllHooks(HWND hWnd = nullptr);
 }
 
 namespace U = Utils;

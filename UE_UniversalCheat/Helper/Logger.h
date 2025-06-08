@@ -10,6 +10,8 @@
 #include <string>
 #include <iostream>
 #include <chrono>
+#include <vector>
+#include <windows.h> // Für WideCharToMultiByte
 
 #define LOGGER_CONSOLE_OUTPUT // aktivieren für zusätzliches Log in die Konsole
 
@@ -22,6 +24,15 @@ namespace Logger
         Warn,
         Error
     };
+
+    inline std::string ws2s(const std::wstring& wstr)
+    {
+        if (wstr.empty()) return {};
+        int size_needed = WideCharToMultiByte(CP_UTF8, 0, wstr.c_str(), (int)wstr.size(), nullptr, 0, nullptr, nullptr);
+        std::string strTo(size_needed, 0);
+        WideCharToMultiByte(CP_UTF8, 0, wstr.c_str(), (int)wstr.size(), &strTo[0], size_needed, nullptr, nullptr);
+        return strTo;
+    }
 
     class Logger
     {
@@ -103,6 +114,53 @@ namespace Logger
         void LogWarn(const std::string& msg) { Log(Level::Warn, msg); }
         void LogError(const std::string& msg) { Log(Level::Error, msg); }
 
+        // NEU: Universelle Log-Methode für beliebige Argumente!
+        template<typename... Args>
+        void LogAny(Level lvl, Args&&... args)
+        {
+            std::ostringstream oss;
+            (oss << ... << ToLogString(std::forward<Args>(args)));
+            Log(lvl, oss.str());
+        }
+
+        // --- ToLogString: universal für beliebige Typen ---
+        // Für std::wstring
+        static std::string ToLogString(const std::wstring& ws)
+        {
+            if (ws.empty()) return {};
+            int size_needed = WideCharToMultiByte(CP_UTF8, 0, ws.c_str(), (int)ws.size(), NULL, 0, NULL, NULL);
+            std::string strTo(size_needed, 0);
+            WideCharToMultiByte(CP_UTF8, 0, ws.c_str(), (int)ws.size(), &strTo[0], size_needed, NULL, NULL);
+            return strTo;
+        }
+        // Für wchar_t*
+        static std::string ToLogString(const wchar_t* ws)
+        {
+            if (!ws) return {};
+            int size_needed = WideCharToMultiByte(CP_UTF8, 0, ws, (int)wcslen(ws), NULL, 0, NULL, NULL);
+            std::string strTo(size_needed, 0);
+            WideCharToMultiByte(CP_UTF8, 0, ws, (int)wcslen(ws), &strTo[0], size_needed, NULL, NULL);
+            return strTo;
+        }
+        // Für char*
+        static std::string ToLogString(const char* s)
+        {
+            return s ? std::string(s) : std::string();
+        }
+        // Für std::string
+        static std::string ToLogString(const std::string& s)
+        {
+            return s;
+        }
+        // Für alle anderen Typen (int, double, enum, usw.)
+        template<typename T>
+        static std::string ToLogString(const T& val)
+        {
+            std::ostringstream oss;
+            oss << val;
+            return oss.str();
+        }
+
     private:
         std::ofstream logfile;
         std::string logFilePath = "C:\\MeinProjektLog.txt";
@@ -174,13 +232,17 @@ namespace Logger
     };
 
     // Convenience-Macros
-#define LOG_DEBUG(...) ::Logger::Logger::Instance().LogDebug(__VA_ARGS__)
-#define LOG_INFO(...)  ::Logger::Logger::Instance().LogInfo(__VA_ARGS__)
-#define LOG_WARN(...)  ::Logger::Logger::Instance().LogWarn(__VA_ARGS__)
-#define LOG_ERROR(...) ::Logger::Logger::Instance().LogError(__VA_ARGS__)
+#define LOG_DEBUG(...)    ::Logger::Logger::Instance().LogDebug(__VA_ARGS__)
+#define LOG_INFO(...)     ::Logger::Logger::Instance().LogInfo(__VA_ARGS__)
+#define LOG_WARN(...)     ::Logger::Logger::Instance().LogWarn(__VA_ARGS__)
+#define LOG_ERROR(...)    ::Logger::Logger::Instance().LogError(__VA_ARGS__)
+
+#define LOG_DEBUG_ANY(...) ::Logger::Logger::Instance().LogAny(::Logger::Level::Debug, __VA_ARGS__)
+#define LOG_INFO_ANY(...)  ::Logger::Logger::Instance().LogAny(::Logger::Level::Info, __VA_ARGS__)
+#define LOG_WARN_ANY(...)  ::Logger::Logger::Instance().LogAny(::Logger::Level::Warn, __VA_ARGS__)
+#define LOG_ERROR_ANY(...) ::Logger::Logger::Instance().LogAny(::Logger::Level::Error, __VA_ARGS__)
 
 #define LOG_SETFILE(filepath) ::Logger::Logger::Instance().SetLogFile(filepath)
 #define LOG_GETFILE()         ::Logger::Logger::Instance().GetLogFilePath()
 
 } // namespace Logger
-
