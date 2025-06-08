@@ -7,6 +7,8 @@
 #include "../ImGui/imgui_impl_win32.h"
 #include "../Helper/Helper.h"
 #include "../Helper/Cheese.h"
+#include "../Hooks/menu/menu.hpp"
+
 #pragma comment(lib, "dwmapi.lib")
 #include "Dwmapi.h"
 

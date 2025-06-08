@@ -8,8 +8,6 @@ ID3D11RenderTargetView* g_mainRenderTargetView = nullptr;
 
 // Overlay Fenster-Variablen
 
-int ValidEntsLevel;
-int AllEntsLevel;
 static bool PawnFilterEnabled = true;
 static bool vsyncEnabled = false;
 
@@ -193,123 +191,7 @@ void RenderOverlay()
         ImGui_ImplWin32_NewFrame();
         ImGui::NewFrame();
 
-        // ✅ DrawList
-        ImDrawList* drawlist = ImGui::GetForegroundDrawList();
-
-        // ✅ World und Controller prüfen
-        SDK::UEngine* Engine = SDK::UEngine::GetEngine();
-        SDK::UWorld* World = SDK::UWorld::GetWorld();
-        if (!World) continue;
-
-        SDK::APlayerController* MyController = World->OwningGameInstance->LocalPlayers[0]->PlayerController;
-        if (!MyController) continue;
-
-
-        // Ersetze TArray durch std::vector
-        static std::vector<SDK::ULevel*> LevelArr;
-        static std::vector<std::string> levelNames;
-
-        LevelArr.clear();
-        levelNames.clear();
-
-        for (int i = 0; i < World->Levels.Num(); i++) {
-            SDK::ULevel* Level = World->Levels[i];
-            if (Level) {
-                LevelArr.push_back(Level);                        // ✅ std::vector statt TArray
-                levelNames.push_back(Level->GetFullName());          // ✅ Levelnamen speichern
-
-            }
-        }
-
-        // ✅ Cheats initialisieren (nur einmal)
-        static bool initialized = false;
-        if (!initialized) {
-            Cheese::Initialize(MyController);
-            Cheese::ActivateCheese("Godmode", true);
-            Cheese::ActivateCheese("Flyhack", false);
-            initialized = true;
-        }
-
-
-        enum class ActorArrayOffset {
-            PrimaryActors = 0x98,
-            SecondaryActors = 0xA8
-        };
-
-        static ActorArrayOffset selectedArrayOffset = ActorArrayOffset::PrimaryActors;
-
-        ImGui::Begin("Debug");
-        ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / IO.Framerate, IO.Framerate);
-
-        static float fps = 50.0f;
-        static float Distcap = 3000.0f;
-
-        ImGui::SliderFloat("FPS", &fps, 1.f, 170.f);
-        ImGui::SliderFloat("ESP Distance", &Distcap, 2.f, 20000.0f);
-
-        if (LevelArr.size() > 0 && selectedLevelIndex < LevelArr.size()) {
-            if (ImGui::BeginCombo("Select Level", levelNames[selectedLevelIndex].c_str())) {
-                for (int i = 0; i < levelNames.size(); i++) {
-                    bool isSelected = (selectedLevelIndex == i);
-                    if (ImGui::Selectable(levelNames[i].c_str(), isSelected)) {
-                        selectedLevelIndex = i;
-                    }
-                    if (isSelected) {
-                        ImGui::SetItemDefaultFocus();
-                    }
-                }
-                ImGui::EndCombo();
-            }
-        }
-        const char* arrayOptions[] = { "Primary Actors (0x98)", "Secondary Actors (0xA8)" };
-        int currentSelection = (selectedArrayOffset == ActorArrayOffset::PrimaryActors) ? 0 : 1;
-        if (ImGui::BeginCombo("Select Actor Array", arrayOptions[currentSelection])) {
-            for (int i = 0; i < IM_ARRAYSIZE(arrayOptions); i++) {
-                bool isSelected = (currentSelection == i);
-                if (ImGui::Selectable(arrayOptions[i], isSelected)) {
-                    selectedArrayOffset = (i == 0) ? ActorArrayOffset::PrimaryActors : ActorArrayOffset::SecondaryActors;
-                }
-                if (isSelected) {
-                    ImGui::SetItemDefaultFocus();
-                }
-            }
-            ImGui::EndCombo();
-        }
-        ImGui::Text("All Entities: %d", AllEntsLevel);
-        ImGui::Text("Valid Entities: %d", ValidEntsLevel);
-        fpsLimiter.setTargetFPS(fps);
-        ImGui::Checkbox("Render only Pawns", &PawnFilterEnabled);
-        ImGui::Checkbox("Enable VSync", &vsyncEnabled);
-        for (auto& cheat : Cheese::GetCheeseList()) {
-            if (ImGui::Checkbox(cheat.Name.c_str(), &cheat.Enabled)) {
-                cheat.ToggleAction(cheat.Enabled);
-            }
-        }
-        ImGui::ColorEdit4("color", (float*)&clear_color);
-        ImGui::End();
-
-
-
-        SDK::ULevel* CurrentLevel = LevelArr[selectedLevelIndex];
-        SDK::TArray<SDK::AActor*>* ActiveActorArray = reinterpret_cast<SDK::TArray<SDK::AActor*>*>(
-            reinterpret_cast<uintptr_t>(CurrentLevel) + static_cast<uintptr_t>(selectedArrayOffset)
-            );
-
-        AllEntsLevel = 0;
-        ValidEntsLevel = 0;
-        static Cam gameCam;
-        gameCam.UpdateCam(MyController->PlayerCameraManager);
-        for (int i = 0; i < ActiveActorArray->Num(); i++) {
-            SDK::AActor* Actor = (*ActiveActorArray)[i];
-            if (Actor) {
-                AllEntsLevel++;
-                if (SimpleESP::DrawActorESP(Actor, gameCam, drawlist, Distcap, PawnFilterEnabled)) {
-                    ValidEntsLevel++;
-                }
-            }
-        }
-
-        Cheese::ApplyCheese();
+        Menu::Render();
 
         // ✅ Rendering
         float TransparentColor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };

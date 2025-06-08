@@ -23,7 +23,7 @@ bool TransRender = false;
 
 //HOOKRENDERING
 bool HookRender = true;
-RenderingBackend_t RenderModule = RenderingBackend_t::DIRECTX11;
+RenderingBackend_t RenderModule = RenderingBackend_t::DIRECTX12;
 
 void OpenConsole()
 {

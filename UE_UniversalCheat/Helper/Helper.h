@@ -134,7 +134,7 @@ private:
 class SimpleESP {
 public:
     static bool DrawActorESP(SDK::AActor* Actor, const Cam& camera, ImDrawList* drawlist, float DistCap, bool onlyPawns);
-
+    static bool IsWorldValid(SDK::UWorld* World);
 
 private:
     static SDK::FVector GetActorPosition(SDK::AActor* Actor);

@@ -99,6 +99,7 @@ bool UEWorldToScreen(const Vector3& worldLoc, Vector2& screenPos, Vector3 Rotati
 }
 
 
+
 SDK::FName CreateFName(UC::FString Name) {
     SDK::FName NewName;
     NewName.ComparisonIndex = SDK::UKismetStringLibrary::Conv_StringToName(Name).ComparisonIndex;
@@ -121,6 +122,16 @@ SDK::FVector SimpleESP::GetActorPosition(SDK::AActor* Actor) {
 bool SimpleESP::IsActorVisible(const Vector2& screenPos, int screenWidth, int screenHeight) {
     return screenPos.x >= 0 && screenPos.x <= screenWidth &&
         screenPos.y >= 0 && screenPos.y <= screenHeight;
+}
+bool SimpleESP::IsWorldValid(SDK::UWorld* World) {
+    bool valid = false;
+    __try {
+        valid = World && World->OwningGameInstance && World->OwningGameInstance->LocalPlayers.Num() > 0;
+    }
+    __except (EXCEPTION_EXECUTE_HANDLER) {
+        valid = false;
+    }
+    return valid;
 }
 void SimpleESP::RenderActorInfo(ImDrawList* drawlist, const Vector2& screenPos, ImU32 color, const std::string& ActorName, float Dist) {
     std::string distanceText = std::to_string(Dist);
@@ -178,6 +189,95 @@ bool SimpleESP::DrawActorESP(
     }
     return false;
 }
+//void RenderAllEnts(
+//    SDK::TArray<void*>* ActiveEntityArray, // Raw, weil manchmal kein reines TArray<AActor*>
+//    const Cam& gameCam,
+//    ImDrawList* drawlist,
+//    float Distcap,
+//    bool PawnFilterEnabled,
+//    int& AllEntsLevel,
+//    int& ValidEntsLevel)
+//{
+//    AllEntsLevel = 0;
+//    ValidEntsLevel = 0;
+//
+//    for (int i = 0; i < ActiveEntityArray->Num(); i++) {
+//        void* RawPtr = (*ActiveEntityArray)[i];
+//        if (!RawPtr) continue;
+//        AllEntsLevel++;
+//
+//        // Vorbereitung für Darstellung
+//        std::string entityClass = "Unknown";
+//        std::string entityName = "";
+//        ImU32 color = IM_COL32(255, 255, 255, 220);
+//        SDK::FVector actorPos{};
+//        bool rendered = false;
+//
+//        __try {
+//            SDK::AActor* Actor = reinterpret_cast<SDK::AActor*>(RawPtr);
+//            if (Actor && Actor->IsA(SDK::AActor::StaticClass())) {
+//                entityClass = "AActor";
+//                color = IM_COL32(255, 255, 0, 220);
+//
+//                entityName = Actor->GetName();
+//                if (entityName.empty()) entityName = "<no name>";
+//
+//                actorPos = GetActorPosition(Actor); // Stelle sicher, dass die Funktion sichtbar ist!
+//                if (Actor->IsA(SDK::APawn::StaticClass())) {
+//                    entityClass = "APawn";
+//                    color = IM_COL32(255, 0, 0, 220);
+//                }
+//                else if (Actor->IsA(SDK::ACharacter::StaticClass())) {
+//                    entityClass = "ACharacter";
+//                    color = IM_COL32(0, 180, 255, 220);
+//                }
+//                else if (Actor->IsA(SDK::AStaticMeshActor::StaticClass())) {
+//                    entityClass = "AStaticMeshActor";
+//                    color = IM_COL32(0, 200, 255, 220);
+//                }
+//
+//                // ESP zeichnen wie gehabt:
+//                if (!actorPos.IsZero()) {
+//                    Vector2 screenPos;
+//                    if (UEWorldToScreen(
+//                        Vector3(actorPos.X, actorPos.Y, actorPos.Z), screenPos,
+//                        Vector3(gameCam.Rotation.Pitch, gameCam.Rotation.Yaw, gameCam.Rotation.Roll),
+//                        Vector3(gameCam.CamPos.X, gameCam.CamPos.Y, gameCam.CamPos.Z),
+//                        gameCam.Fov, 1440, 2560)) {
+//                        float distance = gameCam.CamPos.GetDistanceTo(actorPos) / 100.0f;
+//                        if (distance > 2.f && distance < Distcap) {
+//                            char label[128];
+//                            sprintf_s(label, "[%s] %s (%.1fm)", entityClass.c_str(), entityName.c_str(), distance);
+//                            drawlist->AddText(ImVec2(screenPos.x, screenPos.y), color, label);
+//                            rendered = true;
+//                            ValidEntsLevel++;
+//                        }
+//                    }
+//                }
+//                // Wenn nicht sichtbar oder zu weit, nur Label
+//                goto draw_label;
+//            }
+//
+//
+//        }
+//        __except (EXCEPTION_EXECUTE_HANDLER) {
+//            // Exception beim Zugriff – render fallback label unten!
+//        }
+//
+//        // --- Fallback: Immer Adresse/Typ anzeigen ---
+//    draw_label:
+//        if (!rendered) {
+//            // Zeige rohe Adresse
+//            ImVec2 screenPos((float)(40 + (i % 20) * 60), (float)(100 + (i / 20) * 16));
+//            char buf[128];
+//            if (entityName.empty())
+//                sprintf_s(buf, "%s: 0x%p", entityClass.c_str(), RawPtr);
+//            else
+//                sprintf_s(buf, "%s: %s [0x%p]", entityClass.c_str(), entityName.c_str(), RawPtr);
+//            drawlist->AddText(screenPos, color, buf);
+//        }
+//    }
+//}
 
 
 
