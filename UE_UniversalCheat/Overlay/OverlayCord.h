@@ -4,8 +4,8 @@
 #include <Windows.h>
 #include "Overlay.h"
 #include <d3d11.h>
-#include "ImGui/imgui.h"
-#include "ImGui/imgui_impl_dx11.h"
+#include "../ImGui/imgui.h"
+#include "../ImGui/imgui_impl_dx11.h"
 #include <iostream>
 #include <tlhelp32.h>
 #include <string>

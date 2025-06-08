@@ -2,9 +2,6 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <ClCompile Include="Main.cpp" />
-    <ClCompile Include="Helper.cpp">
-      <Filter>Helper</Filter>
-    </ClCompile>
     <ClCompile Include="SDK\Basic.cpp">
       <Filter>SDK</Filter>
     </ClCompile>
@@ -13,18 +10,6 @@
     </ClCompile>
     <ClCompile Include="SDK\Engine_functions.cpp">
       <Filter>SDK</Filter>
-    </ClCompile>
-    <ClCompile Include="Overlay.cpp">
-      <Filter>Overlay</Filter>
-    </ClCompile>
-    <ClCompile Include="OverlayCord.cpp">
-      <Filter>Overlay</Filter>
-    </ClCompile>
-    <ClCompile Include="Cheese.cpp">
-      <Filter>Helper</Filter>
-    </ClCompile>
-    <ClCompile Include="DXHook.cpp">
-      <Filter>Hook</Filter>
     </ClCompile>
     <ClCompile Include="ImGui\imgui_tables.cpp">
       <Filter>ImGui</Filter>
@@ -47,29 +32,59 @@
     <ClCompile Include="ImGui\imgui_impl_win32.cpp">
       <Filter>ImGui</Filter>
     </ClCompile>
+    <ClCompile Include="Helper\Cheese.cpp">
+      <Filter>Helper</Filter>
+    </ClCompile>
+    <ClCompile Include="Helper\Helper.cpp">
+      <Filter>Helper</Filter>
+    </ClCompile>
+    <ClCompile Include="Overlay\Overlay.cpp">
+      <Filter>Overlay</Filter>
+    </ClCompile>
+    <ClCompile Include="Overlay\OverlayCord.cpp">
+      <Filter>Overlay</Filter>
+    </ClCompile>
+    <ClCompile Include="Hooks\hooks.cpp">
+      <Filter>Hooks</Filter>
+    </ClCompile>
+    <ClCompile Include="Hooks\backend\dx9\hook_directx9.cpp">
+      <Filter>Hooks</Filter>
+    </ClCompile>
+    <ClCompile Include="Hooks\backend\dx10\hook_directx10.cpp">
+      <Filter>Hooks</Filter>
+    </ClCompile>
+    <ClCompile Include="Hooks\backend\dx11\hook_directx11.cpp">
+      <Filter>Hooks</Filter>
+    </ClCompile>
+    <ClCompile Include="Hooks\backend\dx12\hook_directx12.cpp">
+      <Filter>Hooks</Filter>
+    </ClCompile>
+    <ClCompile Include="Hooks\backend\vulkan\hook_vulkan.cpp">
+      <Filter>Hooks</Filter>
+    </ClCompile>
+    <ClCompile Include="Hooks\utils\utils.cpp">
+      <Filter>Hooks</Filter>
+    </ClCompile>
+    <ClCompile Include="Hooks\menu\menu.cpp">
+      <Filter>Hooks</Filter>
+    </ClCompile>
+    <ClCompile Include="ImGui\imgui_demo.cpp">
+      <Filter>ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="ImGui\imgui_impl_dx9.cpp">
+      <Filter>ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="ImGui\imgui_impl_dx10.cpp">
+      <Filter>ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="ImGui\imgui_impl_opengl3.cpp">
+      <Filter>ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="Hooks\backend\opengl\hook_opengl.cpp">
+      <Filter>Hooks</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Helper.h">
-      <Filter>Helper</Filter>
-    </ClInclude>
-    <ClInclude Include="Font.h">
-      <Filter>Overlay</Filter>
-    </ClInclude>
-    <ClInclude Include="Overlay.h">
-      <Filter>Overlay</Filter>
-    </ClInclude>
-    <ClInclude Include="OverlayCord.h">
-      <Filter>Overlay</Filter>
-    </ClInclude>
-    <ClInclude Include="ConfigManager.h">
-      <Filter>Helper</Filter>
-    </ClInclude>
-    <ClInclude Include="Cheese.h">
-      <Filter>Helper</Filter>
-    </ClInclude>
-    <ClInclude Include="DXHook.h">
-      <Filter>Hook</Filter>
-    </ClInclude>
     <ClInclude Include="MinHook\MinHook.h">
       <Filter>MinHook</Filter>
     </ClInclude>
@@ -100,6 +115,69 @@
     <ClInclude Include="ImGui\imgui_impl_dx12.h">
       <Filter>ImGui</Filter>
     </ClInclude>
+    <ClInclude Include="Helper\Cheese.h">
+      <Filter>Helper</Filter>
+    </ClInclude>
+    <ClInclude Include="Helper\ConfigManager.h">
+      <Filter>Helper</Filter>
+    </ClInclude>
+    <ClInclude Include="Helper\Helper.h">
+      <Filter>Helper</Filter>
+    </ClInclude>
+    <ClInclude Include="Helper\Logger.h">
+      <Filter>Helper</Filter>
+    </ClInclude>
+    <ClInclude Include="Overlay\Font.h">
+      <Filter>Overlay</Filter>
+    </ClInclude>
+    <ClInclude Include="Overlay\Overlay.h">
+      <Filter>Overlay</Filter>
+    </ClInclude>
+    <ClInclude Include="Overlay\OverlayCord.h">
+      <Filter>Overlay</Filter>
+    </ClInclude>
+    <ClInclude Include="Hooks\hooks.hpp">
+      <Filter>Hooks</Filter>
+    </ClInclude>
+    <ClInclude Include="Hooks\backend\dx9\hook_directx9.hpp">
+      <Filter>Hooks</Filter>
+    </ClInclude>
+    <ClInclude Include="Hooks\backend\dx10\hook_directx10.hpp">
+      <Filter>Hooks</Filter>
+    </ClInclude>
+    <ClInclude Include="Hooks\backend\dx11\hook_directx11.hpp">
+      <Filter>Hooks</Filter>
+    </ClInclude>
+    <ClInclude Include="Hooks\backend\dx12\hook_directx12.hpp">
+      <Filter>Hooks</Filter>
+    </ClInclude>
+    <ClInclude Include="Hooks\backend\vulkan\hook_vulkan.hpp">
+      <Filter>Hooks</Filter>
+    </ClInclude>
+    <ClInclude Include="Hooks\backend.hpp">
+      <Filter>Hooks</Filter>
+    </ClInclude>
+    <ClInclude Include="Hooks\utils\utils.hpp">
+      <Filter>Hooks</Filter>
+    </ClInclude>
+    <ClInclude Include="Hooks\menu\menu.hpp">
+      <Filter>Hooks</Filter>
+    </ClInclude>
+    <ClInclude Include="ImGui\imgui_impl_dx9.h">
+      <Filter>ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="ImGui\imgui_impl_dx10.h">
+      <Filter>ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="ImGui\imgui_impl_opengl3.h">
+      <Filter>ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="ImGui\imgui_impl_opengl3_loader.h">
+      <Filter>ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="Hooks\backend\opengl\hook_opengl.hpp">
+      <Filter>Hooks</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="ImGui">
@@ -114,14 +192,11 @@
     <Filter Include="Overlay">
       <UniqueIdentifier>{4aac5678-cc1b-42e5-9b3d-679f38231c21}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Hook">
-      <UniqueIdentifier>{b0d71444-cf63-4e5c-9c92-201eb788ace4}</UniqueIdentifier>
-    </Filter>
     <Filter Include="MinHook">
       <UniqueIdentifier>{0d5fdcb0-6edd-4fb6-b5a0-3d030f170e52}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Hook\DX12">
-      <UniqueIdentifier>{9ac76413-fe43-45dd-bdeb-4cefcaf2c4c7}</UniqueIdentifier>
+    <Filter Include="Hooks">
+      <UniqueIdentifier>{c3c625f4-f61e-41df-bcf0-1ee9c46b178c}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>
