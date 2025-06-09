@@ -136,7 +136,7 @@ void RenderOverlay()
     HWND hWndOverlay = CreateWindowExW(
         WS_EX_TOPMOST | WS_EX_LAYERED | WS_EX_TRANSPARENT,  // Layered + Transparent
         wc.lpszClassName,
-        L"Dear ImGui DirectX11 Example",
+        L"Window",
         WS_POPUP,
         0, 0, Screen_w, Screen_h,
         nullptr, nullptr, nullptr, nullptr
@@ -191,7 +191,12 @@ void RenderOverlay()
         ImGui_ImplWin32_NewFrame();
         ImGui::NewFrame();
 
+
+
         Menu::Render();
+
+        ImGui::SliderFloat("FPS", &fps, 1.f, 170.f);
+        fpsLimiter.setTargetFPS(fps);
 
         // ✅ Rendering
         float TransparentColor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
