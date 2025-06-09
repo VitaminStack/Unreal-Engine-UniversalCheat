@@ -13,32 +13,33 @@
 // =============================
 class PointerChecks {
 public:
-    static inline bool IsReadable(void* ptr, size_t size = sizeof(void*)) {
+    static inline bool IsReadable(const void* ptr, size_t size = sizeof(void*))
+    {
+        // 1:1 die gleiche Logik wie unten – nur Parameter ist const
         if (!ptr) {
-            printf("[POINTER_CHECK] Null pointer detected\n");
             return false;
         }
         MEMORY_BASIC_INFORMATION mbi;
         if (VirtualQuery(ptr, &mbi, sizeof(mbi)) == 0) {
-            printf("[POINTER_CHECK] VirtualQuery failed for address: 0x%p\n", ptr);
             return false;
         }
         if (mbi.State != MEM_COMMIT ||
-            !(mbi.Protect & (PAGE_READONLY | PAGE_READWRITE | PAGE_EXECUTE_READ | PAGE_EXECUTE_READWRITE))) {
-            printf("[POINTER_CHECK] Memory not accessible at address: 0x%p\n", ptr);
+            !(mbi.Protect & (PAGE_READONLY | PAGE_READWRITE |
+                PAGE_EXECUTE_READ | PAGE_EXECUTE_READWRITE))) {
             return false;
         }
         return true;
+    }
+    static inline bool IsReadable(void* ptr, size_t size = sizeof(void*)) {
+        return IsReadable(static_cast<const void*>(ptr), size);
     }
 
     template<typename T>
     static inline bool IsValidPtr(T* ptr, const char* name = "Unknown") {
         if (!ptr) {
-            printf("[POINTER_CHECK] %s: Null pointer\n", name);
             return false;
         }
         if (!IsReadable(ptr, sizeof(T))) {
-            printf("[POINTER_CHECK] %s: Pointer 0x%p not readable\n", name, ptr);
             return false;
         }
         return true;
@@ -47,32 +48,26 @@ public:
     template<typename T>
     static inline bool SafeRead(void* address, T& output, const char* name = "Unknown") {
         if (!IsReadable(address, sizeof(T))) {
-            printf("[POINTER_CHECK] %s: Cannot read from address 0x%p\n", name, address);
             return false;
         }
         __try {
             output = *reinterpret_cast<T*>(address);
-            printf("[POINTER_CHECK] %s: Successfully read from address 0x%p\n", name, address);
             return true;
         }
         __except (EXCEPTION_EXECUTE_HANDLER) {
-            printf("[POINTER_CHECK] %s: Exception reading from address 0x%p\n", name, address);
             return false;
         }
     }
     template<typename T>
     static inline bool SafeWrite(void* address, const T& value, const char* name = "Unknown") {
         if (!IsReadable(address, sizeof(T))) {
-            printf("[POINTER_CHECK] %s: Cannot write to address 0x%p\n", name, address);
             return false;
         }
         __try {
             *reinterpret_cast<T*>(address) = value;
-            printf("[POINTER_CHECK] %s: Successfully wrote to address 0x%p\n", name, address);
             return true;
         }
         __except (EXCEPTION_EXECUTE_HANDLER) {
-            printf("[POINTER_CHECK] %s: Exception writing to address 0x%p\n", name, address);
             return false;
         }
     }
