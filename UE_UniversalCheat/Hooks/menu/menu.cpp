@@ -8,11 +8,13 @@
 
 namespace ig = ImGui;
 
-int ValidEntsLevel;
-int AllEntsLevel;
+static int ValidEntsLevel = 0;
+static int AllEntsLevel = 0;
+
 static int selectedLevelIndex = 0;
 static std::vector<std::string> levelNames;
 static bool PawnFilterEnabled = true;
+
 
 namespace Menu {
     void InitializeContext(HWND hwnd) {
@@ -50,6 +52,7 @@ namespace Menu {
         levelNames.clear();
 
         if (worldValid) {
+
             for (int i = 0; i < World->Levels.Num(); i++) {
                 SDK::ULevel* Level = World->Levels[i];
                 if (Level) {
@@ -65,6 +68,10 @@ namespace Menu {
             Cheese::Initialize(MyController);
             Cheese::ActivateCheese("Godmode", true);
             Cheese::ActivateCheese("Flyhack", false);
+            Cheese::ActivateCheese("Unl Ammo", false);
+            Cheese::ActivateCheese("No Spread", false);
+            Cheese::ActivateCheese("Inf Durability", false);
+
             initialized = true;
         }
 
@@ -98,9 +105,7 @@ namespace Menu {
 
         ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / IO.Framerate, IO.Framerate);
 
-        static float fps = 50.0f;
-        static float Distcap = 3000.0f;
-        ImGui::SliderFloat("FPS", &fps, 1.f, 170.f);
+        static float Distcap = 3000.0f;        
         ImGui::SliderFloat("ESP Distance", &Distcap, 2.f, 20000.0f);
 
         
@@ -150,24 +155,55 @@ namespace Menu {
         // ESP nur bei validen Daten
         if (worldValid && MyController && LevelArr.size() > 0 && selectedLevelIndex < LevelArr.size()) {
             SDK::ULevel* CurrentLevel = LevelArr[selectedLevelIndex];
-            SDK::TArray<SDK::AActor*>* ActiveActorArray = reinterpret_cast<SDK::TArray<SDK::AActor*>*>(
-                reinterpret_cast<uintptr_t>(CurrentLevel) + static_cast<uintptr_t>(selectedArrayOffset)
-                );
+            auto* ActorArray = reinterpret_cast<SDK::TArray<SDK::AActor*>*>(
+                reinterpret_cast<std::uintptr_t>(CurrentLevel) +
+                static_cast<std::uintptr_t>(selectedArrayOffset));
 
-            AllEntsLevel = 0;
-            ValidEntsLevel = 0;
+            AllEntsLevel = ActorArray ? ActorArray->Num() : 0;
+
+            // 1)  neue / bisher unbekannte Actor in den Cache aufnehmen
+            for (int i = 0; i < AllEntsLevel; ++i)
+            {
+                if (SDK::AActor* a = (*ActorArray)[i])
+                    g_EntityCache.Add(a);              // (emplace ignoriert Duplikate)
+            }
+
+            // 2)  Kamera updaten und Cache-Refresh (nur dynamische Daten)
             static Cam gameCam;
             gameCam.UpdateCam(MyController->PlayerCameraManager);
 
-            for (int i = 0; i < ActiveActorArray->Num(); i++) {
-                SDK::AActor* Actor = (*ActiveActorArray)[i];
-                if (Actor) {
-                    AllEntsLevel++;
-                    if (SimpleESP::DrawActorESP(Actor, gameCam, drawlist, Distcap, PawnFilterEnabled)) {
-                        ValidEntsLevel++;
-                    }
-                }
+            ImGuiIO& io = ImGui::GetIO();
+            g_EntityCache.Refresh(gameCam.CamPos,
+                gameCam.Rotation,
+                gameCam.Fov,
+                static_cast<int>(io.DisplaySize.x),
+                static_cast<int>(io.DisplaySize.y));
+
+            ValidEntsLevel = 0;
+
+            auto& dynList = g_EntityCache.DrawList();
+            auto& statList = g_EntityCache.StaticDrawList();     // 1-zu-1 parallel
+
+            for (size_t i = 0; i < dynList.size(); ++i)
+            {
+                const auto& dyn = dynList[i];
+                const auto* st = statList[i];                   // garantiert vorhanden
+
+                // Pawn-Filter (optional)
+                if (PawnFilterEnabled && st->actor &&
+                    !st->actor->IsA(SDK::APawn::StaticClass()))
+                    continue;
+
+                std::string distanceText = std::to_string(dyn.distance);
+                distanceText = distanceText.substr(0, distanceText.find('.') + 2);
+                drawlist->AddText(ImVec2(CalcMiddlePos(dyn.screenPos.x, st->label.c_str()), dyn.screenPos.y), st->color, st->label.c_str());
+                drawlist->AddText(ImVec2(CalcMiddlePos(dyn.screenPos.x, (distanceText + "m").c_str()), dyn.screenPos.y + 15), st->color, (distanceText + "m").c_str());
+
+                ++ValidEntsLevel;
             }
+
+
+            // 4)  restliche Features (Cheats etc.)
             Cheese::ApplyCheese();
         }
     }
