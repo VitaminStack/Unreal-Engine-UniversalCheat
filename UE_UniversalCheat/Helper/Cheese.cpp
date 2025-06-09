@@ -1,4 +1,4 @@
-#include "Cheese.h"
+﻿#include "Cheese.h"
 
 // Static Members (jetzt exakt wie in Cheese.h!)
 std::vector<CheeseOption> Cheese::CheeseList;
@@ -18,7 +18,7 @@ void Cheese::Initialize(SDK::APlayerController* Controller) {
 
     // Godmode
     CheeseList.emplace_back(
-        "Godmode_Simple",
+        "Godmode",
         [Controller](bool enable) {
             if (!PointerChecks::IsValidPtr(Controller, "Controller")) return;
             if (!PointerChecks::IsValidPtr(Controller->Character, "Controller->Character")) return;
@@ -84,80 +84,115 @@ void Cheese::Initialize(SDK::APlayerController* Controller) {
         }
     );
 
-    // Unlimited Ammo
     CheeseList.emplace_back(
         "Unl Ammo",
-        [Controller](bool enable) {
-            if (!PointerChecks::IsValidPtr(Controller, "Controller")) return;
-            if (!PointerChecks::IsValidPtr(Controller->Character, "Controller->Character")) return;
-
-            uintptr_t characterBase = reinterpret_cast<uintptr_t>(Controller->Character);
-            uintptr_t itemInHandsPtrAddress = characterBase + 0x17D8;
-
-            if (!PointerChecks::IsReadable(reinterpret_cast<void*>(itemInHandsPtrAddress), sizeof(uintptr_t))) {
-                printf("[UNL_AMMO] ItemInHands pointer address not readable\n");
+        [Controller](bool enable)
+        {
+            if (!PointerChecks::IsValidPtr(Controller, "Controller") ||
+                !PointerChecks::IsValidPtr(Controller->Character, "Character"))
                 return;
-            }
 
-            uintptr_t itemInHandsPtr;
-            if (!PointerChecks::SafeRead(reinterpret_cast<void*>(itemInHandsPtrAddress), itemInHandsPtr, "ItemInHands Pointer")) {
+            uintptr_t itemInHands = 0;
+            uintptr_t itemPtrAddr = reinterpret_cast<uintptr_t>(Controller->Character) + 0x17D8;
+            if (!PointerChecks::SafeRead(reinterpret_cast<void*>(itemPtrAddr), itemInHands, "ItemInHands"))
                 return;
-            }
 
-            if (!itemInHandsPtr) {
-                printf("[UNL_AMMO] ItemInHands is null - no weapon equipped\n");
+            uintptr_t requiredAmmoAddr = itemInHands + 0xAF8;
+            PointerChecks::SafeWrite(reinterpret_cast<void*>(requiredAmmoAddr),
+                enable ? 0 : 1, "RequiredAmmoFlag");
+        },
+        [Controller]()        // reset
+        {
+            if (!PointerChecks::IsValidPtr(Controller, "Controller") ||
+                !PointerChecks::IsValidPtr(Controller->Character, "Character"))
                 return;
-            }
 
-            if (!PointerChecks::IsReadable(reinterpret_cast<void*>(itemInHandsPtr), 0x1400)) {
-                printf("[UNL_AMMO] ItemInHands object not fully readable\n");
+            uintptr_t itemInHands = 0;
+            uintptr_t itemPtrAddr = reinterpret_cast<uintptr_t>(Controller->Character) + 0x17D8;
+            if (!PointerChecks::SafeRead(reinterpret_cast<void*>(itemPtrAddr), itemInHands, "ItemInHands"))
                 return;
+
+            uintptr_t requiredAmmoAddr = itemInHands + 0xAF8;
+            PointerChecks::SafeWrite(reinterpret_cast<void*>(requiredAmmoAddr),
+                1, "RequiredAmmoFlag Reset");
+        });
+
+
+    // ---------------------------------------------------------------------------
+    // 2) No-Spread  – separater Cheat
+    // ---------------------------------------------------------------------------
+    static byte g_savedSpread = 1;      // behält Originalwert
+    CheeseList.emplace_back(
+        "No Spread",
+        [Controller](bool enable)
+        {
+            if (!PointerChecks::IsValidPtr(Controller, "Controller") ||
+                !PointerChecks::IsValidPtr(Controller->Character, "Character"))
+                return;
+
+            uintptr_t itemInHands = 0;
+            uintptr_t itemPtrAddr = reinterpret_cast<uintptr_t>(Controller->Character) + 0x17D8;
+            if (!PointerChecks::SafeRead(reinterpret_cast<void*>(itemPtrAddr), itemInHands, "ItemInHands"))
+                return;
+
+            uintptr_t spreadAddr = itemInHands + 0x1381;
+
+            if (enable)
+            {
+                PointerChecks::SafeRead(reinterpret_cast<void*>(spreadAddr),
+                    g_savedSpread, "SaveSpread");
+                PointerChecks::SafeWrite(reinterpret_cast<void*>(spreadAddr),
+                    static_cast<byte>(0), "DisableSpread");
             }
-
-            uintptr_t requiredAmmoAddress = itemInHandsPtr + 0xAF8;
-            uintptr_t spreadAddress = itemInHandsPtr + 0x1381;
-            uintptr_t durabilityAddress = itemInHandsPtr + 0x13f4;
-
-            if (PointerChecks::SafeWrite(reinterpret_cast<void*>(requiredAmmoAddress),
-                enable ? 0 : 1, "RequiredAmmoFlag")) {
-                printf("[UNL_AMMO] RequiredAmmo flag %s\n", enable ? "disabled" : "enabled");
-            }
-
-            if (PointerChecks::SafeWrite(reinterpret_cast<void*>(spreadAddress),
-                static_cast<byte>(enable ? 0 : 1), "Spread")) {
-                printf("[UNL_AMMO] Spread %s\n", enable ? "disabled" : "enabled");
-            }
-
-            if (enable) {
-                if (PointerChecks::SafeWrite(reinterpret_cast<void*>(durabilityAddress),
-                    0.0f, "Durability")) {
-                    printf("[UNL_AMMO] Durability set to 0.0\n");
-                }
+            else               // Toggle auf OFF ⇒ alten Wert zurück
+            {
+                PointerChecks::SafeWrite(reinterpret_cast<void*>(spreadAddr),
+                    g_savedSpread, "RestoreSpread");
             }
         },
-        [Controller]() {
-            if (!PointerChecks::IsValidPtr(Controller, "Controller")) return;
-            if (!PointerChecks::IsValidPtr(Controller->Character, "Controller->Character")) return;
+        [Controller]()         // Reset beim Deaktivieren aller Cheats
+        {
+            // einfach das Toggle-OFF auslösen → alter Wert wird zurückgeschrieben
+        });
 
-            uintptr_t characterBase = reinterpret_cast<uintptr_t>(Controller->Character);
-            uintptr_t itemInHandsPtrAddress = characterBase + 0x17D8;
 
-            uintptr_t itemInHandsPtr;
-            if (!PointerChecks::SafeRead(reinterpret_cast<void*>(itemInHandsPtrAddress), itemInHandsPtr, "ItemInHands Pointer Reset")) {
+    // ---------------------------------------------------------------------------
+    // 3) Infinite Durability  – separater Cheat
+    // ---------------------------------------------------------------------------
+    static float g_savedDurability = 1.f;
+    CheeseList.emplace_back(
+        "Inf Durability",
+        [Controller](bool enable)
+        {
+            if (!PointerChecks::IsValidPtr(Controller, "Controller") ||
+                !PointerChecks::IsValidPtr(Controller->Character, "Character"))
                 return;
-            }
 
-            if (!itemInHandsPtr) {
-                printf("[UNL_AMMO] Reset: ItemInHands is null\n");
+            uintptr_t itemInHands = 0;
+            uintptr_t itemPtrAddr = reinterpret_cast<uintptr_t>(Controller->Character) + 0x17D8;
+            if (!PointerChecks::SafeRead(reinterpret_cast<void*>(itemPtrAddr), itemInHands, "ItemInHands"))
                 return;
-            }
 
-            uintptr_t requiredAmmoAddress = itemInHandsPtr + 0xAF8;
-            if (PointerChecks::SafeWrite(reinterpret_cast<void*>(requiredAmmoAddress), 1, "RequiredAmmoFlag Reset")) {
-                printf("[UNL_AMMO] Reset to default successfully\n");
+            uintptr_t durAddr = itemInHands + 0x13F4;
+
+            if (enable)
+            {
+                PointerChecks::SafeRead(reinterpret_cast<void*>(durAddr),
+                    g_savedDurability, "SaveDurability");
+                PointerChecks::SafeWrite(reinterpret_cast<void*>(durAddr),
+                    0.0f, "SetDurabilityZero");
             }
-        }
-    );
+            else
+            {
+                PointerChecks::SafeWrite(reinterpret_cast<void*>(durAddr),
+                    g_savedDurability, "RestoreDurability");
+            }
+        },
+        [Controller]()         // Reset
+        {
+            // Toggle-OFF genügt, daher leer
+        });
+  
 
     printf("[Cheese] Initialization completed with %zu Cheese loaded\n", CheeseList.size());
 }
