@@ -18,11 +18,11 @@ bool MainHacking = false;
 
 bool ImGUIDiscordRender = false;
 bool DiscordRender = false;
-bool TransRender = false;
+bool TransRender = true;
 
 
 //HOOKRENDERING
-bool HookRender = true;
+bool HookRender = false;
 RenderingBackend_t RenderModule = RenderingBackend_t::DIRECTX12;
 
 void OpenConsole()
