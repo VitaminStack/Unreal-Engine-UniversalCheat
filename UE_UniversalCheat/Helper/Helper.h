@@ -10,6 +10,11 @@
 #include <locale>
 #include "../ImGui/imgui.h"
 #include <cmath>  // Für sqrtf
+#include <unordered_map>
+#include <shared_mutex>
+#include <array>
+#include <atomic>
+#include "Cheese.h"
 
 namespace VectorUtils {
     // ✅ Berechnet die euklidische Distanz zwischen zwei Punkten
@@ -142,3 +147,49 @@ private:
     static void RenderActorInfo(ImDrawList* drawlist, const Vector2& screenPos, ImU32 color, const std::string& ActorName, float Dist);
 };
 
+
+
+
+
+
+struct CachedEntityStatic          // selten verändert
+{
+    const SDK::AActor* actor = nullptr;
+    std::string         label;     // bereits UTF-8
+    ImU32               color = IM_COL32_WHITE;
+};
+
+struct CachedEntityDynamic         // jedes Frame neu
+{
+    SDK::FVector worldPos;
+    Vector2      screenPos;
+    float        distance = 0.f; // Meter
+};
+
+class EntityCache
+{
+public:
+    /* Game-Thread */ void Add(const SDK::AActor* actor);
+    /* Game-Thread */ void Remove(const SDK::AActor* actor);
+
+    /* Update-Thread – pro Frame aufrufen */
+    void Refresh(const SDK::FVector& camPos,
+        const SDK::FRotator& camRot,
+        float fov, int screenW, int screenH);
+
+    /* Render-Thread – lock-frei */
+    const std::vector<CachedEntityDynamic>& DrawList() const;
+    const std::vector<const CachedEntityStatic*>& StaticDrawList() const;
+    bool GetWorldPos(const SDK::AActor* actor, SDK::FVector& out) const;
+    bool SetWorldPos(const SDK::AActor* actor, const SDK::FVector& newPos) const;
+
+private:
+    std::unordered_map<const SDK::AActor*, CachedEntityStatic> statics_;
+    mutable std::shared_mutex staticsMx_;
+
+    std::array<std::vector<CachedEntityDynamic>, 2> dynBuf_;
+    std::array<std::vector<const CachedEntityStatic*>, 2> statPtrBuf_;
+    std::atomic<uint32_t> writeIdx_{ 0 };
+};
+
+extern EntityCache g_EntityCache;

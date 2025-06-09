@@ -189,97 +189,6 @@ bool SimpleESP::DrawActorESP(
     }
     return false;
 }
-//void RenderAllEnts(
-//    SDK::TArray<void*>* ActiveEntityArray, // Raw, weil manchmal kein reines TArray<AActor*>
-//    const Cam& gameCam,
-//    ImDrawList* drawlist,
-//    float Distcap,
-//    bool PawnFilterEnabled,
-//    int& AllEntsLevel,
-//    int& ValidEntsLevel)
-//{
-//    AllEntsLevel = 0;
-//    ValidEntsLevel = 0;
-//
-//    for (int i = 0; i < ActiveEntityArray->Num(); i++) {
-//        void* RawPtr = (*ActiveEntityArray)[i];
-//        if (!RawPtr) continue;
-//        AllEntsLevel++;
-//
-//        // Vorbereitung für Darstellung
-//        std::string entityClass = "Unknown";
-//        std::string entityName = "";
-//        ImU32 color = IM_COL32(255, 255, 255, 220);
-//        SDK::FVector actorPos{};
-//        bool rendered = false;
-//
-//        __try {
-//            SDK::AActor* Actor = reinterpret_cast<SDK::AActor*>(RawPtr);
-//            if (Actor && Actor->IsA(SDK::AActor::StaticClass())) {
-//                entityClass = "AActor";
-//                color = IM_COL32(255, 255, 0, 220);
-//
-//                entityName = Actor->GetName();
-//                if (entityName.empty()) entityName = "<no name>";
-//
-//                actorPos = GetActorPosition(Actor); // Stelle sicher, dass die Funktion sichtbar ist!
-//                if (Actor->IsA(SDK::APawn::StaticClass())) {
-//                    entityClass = "APawn";
-//                    color = IM_COL32(255, 0, 0, 220);
-//                }
-//                else if (Actor->IsA(SDK::ACharacter::StaticClass())) {
-//                    entityClass = "ACharacter";
-//                    color = IM_COL32(0, 180, 255, 220);
-//                }
-//                else if (Actor->IsA(SDK::AStaticMeshActor::StaticClass())) {
-//                    entityClass = "AStaticMeshActor";
-//                    color = IM_COL32(0, 200, 255, 220);
-//                }
-//
-//                // ESP zeichnen wie gehabt:
-//                if (!actorPos.IsZero()) {
-//                    Vector2 screenPos;
-//                    if (UEWorldToScreen(
-//                        Vector3(actorPos.X, actorPos.Y, actorPos.Z), screenPos,
-//                        Vector3(gameCam.Rotation.Pitch, gameCam.Rotation.Yaw, gameCam.Rotation.Roll),
-//                        Vector3(gameCam.CamPos.X, gameCam.CamPos.Y, gameCam.CamPos.Z),
-//                        gameCam.Fov, 1440, 2560)) {
-//                        float distance = gameCam.CamPos.GetDistanceTo(actorPos) / 100.0f;
-//                        if (distance > 2.f && distance < Distcap) {
-//                            char label[128];
-//                            sprintf_s(label, "[%s] %s (%.1fm)", entityClass.c_str(), entityName.c_str(), distance);
-//                            drawlist->AddText(ImVec2(screenPos.x, screenPos.y), color, label);
-//                            rendered = true;
-//                            ValidEntsLevel++;
-//                        }
-//                    }
-//                }
-//                // Wenn nicht sichtbar oder zu weit, nur Label
-//                goto draw_label;
-//            }
-//
-//
-//        }
-//        __except (EXCEPTION_EXECUTE_HANDLER) {
-//            // Exception beim Zugriff – render fallback label unten!
-//        }
-//
-//        // --- Fallback: Immer Adresse/Typ anzeigen ---
-//    draw_label:
-//        if (!rendered) {
-//            // Zeige rohe Adresse
-//            ImVec2 screenPos((float)(40 + (i % 20) * 60), (float)(100 + (i / 20) * 16));
-//            char buf[128];
-//            if (entityName.empty())
-//                sprintf_s(buf, "%s: 0x%p", entityClass.c_str(), RawPtr);
-//            else
-//                sprintf_s(buf, "%s: %s [0x%p]", entityClass.c_str(), entityName.c_str(), RawPtr);
-//            drawlist->AddText(screenPos, color, buf);
-//        }
-//    }
-//}
-
-
 
 
 
@@ -531,3 +440,142 @@ const std::vector<Raycaster::RaycastResult>& Raycaster::GetRaycastHistory() {
 }
 
 
+
+
+
+EntityCache g_EntityCache;
+
+// ✧ Hilfs-UTF-8-Konvertierung (falls UE-FString → std::string benötigt wird)
+static std::string WToUtf8(const wchar_t* wstr)
+{
+    if (!wstr) return {};
+    int len = ::WideCharToMultiByte(CP_UTF8, 0, wstr, -1, nullptr, 0, nullptr, nullptr);
+    std::string out(len - 1, 0);
+    ::WideCharToMultiByte(CP_UTF8, 0, wstr, -1, out.data(), len, nullptr, nullptr);
+    return out;
+}
+
+// ➕ Actor einmalig aufnehmen
+void EntityCache::Add(const SDK::AActor* actor)
+{
+    if (!actor) return;
+
+    CachedEntityStatic cs;
+    cs.actor = actor;
+    cs.label = actor->GetName();                       // UE-SDK liefert std::string
+    if (actor->IsA(SDK::APawn::StaticClass()))
+        cs.color = IM_COL32(255, 60, 60, 255);
+    else
+        cs.color = IM_COL32(60, 255, 60, 255);
+
+    std::unique_lock lock(staticsMx_);
+    statics_.emplace(actor, std::move(cs));
+}
+
+// ➖ Actor aus Cache löschen
+void EntityCache::Remove(const SDK::AActor* actor)
+{
+    std::unique_lock lock(staticsMx_);
+    statics_.erase(actor);
+}
+
+void EntityCache::Refresh(const SDK::FVector& camPos,
+    const SDK::FRotator& camRot,
+    float fov, int screenW, int screenH)
+{
+    const uint32_t newIdx = writeIdx_ ^ 1;                   // 0 ↔ 1
+    auto& dyn = dynBuf_[newIdx];
+    auto& sPtr = statPtrBuf_[newIdx];
+
+    dyn.clear();
+    sPtr.clear();
+
+    std::shared_lock lock(staticsMx_);
+    dyn.reserve(statics_.size());
+    sPtr.reserve(statics_.size());
+
+    Vector3 camPosV(camPos.X, camPos.Y, camPos.Z);
+    Vector3 camRotV(camRot.Pitch, camRot.Yaw, camRot.Roll);
+
+    for (const auto& [ptr, st] : statics_)
+    {
+        if (!ptr)                               // Actor-Pointer selbst prüfen
+            continue;
+
+        CachedEntityDynamic d;
+
+        /* ALT
+            d.worldPos = ptr->RootComponent->RelativeLocation;
+           NEU – sichere Variante */
+        GetWorldPos(ptr, d.worldPos);
+
+        Vector2 scr{};
+        if (!UEWorldToScreen(
+            Vector3(d.worldPos.X, d.worldPos.Y, d.worldPos.Z),
+            scr,
+            camRotV, camPosV, fov,
+            screenH, screenW))
+            continue;                                    // ausserhalb → skip
+
+        d.screenPos = scr;
+        d.distance = VectorUtils::CalculateDistance(camPos, d.worldPos) / 100.f;
+
+        dyn.emplace_back(std::move(d));
+        sPtr.emplace_back(&st);                          // Zeiger auf statische Infos
+    }
+
+    writeIdx_.store(newIdx, std::memory_order_release);
+}
+
+// lock-freier Zugriff aus dem Render-Thread
+const std::vector<CachedEntityDynamic>& EntityCache::DrawList() const
+{
+    return dynBuf_[writeIdx_.load(std::memory_order_acquire)];
+}
+const std::vector<const CachedEntityStatic*>& EntityCache::StaticDrawList() const
+{
+    return statPtrBuf_[writeIdx_.load(std::memory_order_acquire)];
+}
+bool EntityCache::GetWorldPos(const SDK::AActor* actor,
+    SDK::FVector& out) const
+{
+    // Actor noch im Speicher?
+    if (!PointerChecks::IsValidPtr(const_cast<SDK::AActor*>(actor), "AActor"))
+        return false;
+
+    // RootComponent vorhanden?
+    const auto* root = actor->RootComponent;
+    if (!PointerChecks::IsValidPtr(const_cast<SDK::USceneComponent*>(root),
+        "RootComponent"))
+        return false;
+
+    // Adresse des FVector
+    void* locPtr = const_cast<void*>(
+        static_cast<const void*>(&root->RelativeLocation));
+
+    // Sicher lesen  → schreibt in 'out'
+    return PointerChecks::SafeRead(locPtr, out, "RelativeLocation");
+}
+
+bool EntityCache::SetWorldPos(const SDK::AActor* actor,
+    const SDK::FVector& newPos) const
+{
+    if (!PointerChecks::IsValidPtr(actor, "AActor"))
+        return false;
+
+    auto* root = actor->RootComponent;
+    if (!PointerChecks::IsValidPtr(root, "RootComponent"))
+        return false;
+
+    /*-----------------------------------------------------------
+      EXPLIZITER Cast  ->  const-Qualifier entfernen, in void* wandeln
+    -----------------------------------------------------------*/
+    void* locPtr = const_cast<void*>(static_cast<const void*>(&root->RelativeLocation));
+
+    if (!PointerChecks::SafeWrite(locPtr, newPos, "RelativeLocation"))
+        return false;
+
+    // optional: Actor->SetActorLocation(newPos, false, nullptr, true);
+
+    return true;
+}
