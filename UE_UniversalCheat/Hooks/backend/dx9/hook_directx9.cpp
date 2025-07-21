@@ -14,6 +14,7 @@
 #include "../../../Imgui/imgui_impl_dx9.h"
 #include "../../../Imgui/imgui_impl_win32.h"
 #include "../../../minhook/MinHook.h"
+#include "../../../Helper/MHCheck.hpp"
 
 #include "../../hooks.hpp"
 
@@ -110,17 +111,17 @@ namespace DX9 {
 
             CleanupDeviceD3D9( );
 
-            static MH_STATUS resetStatus = MH_CreateHook(reinterpret_cast<void**>(fnReset), &hkReset, reinterpret_cast<void**>(&oReset));
-            static MH_STATUS resetExStatus = MH_CreateHook(reinterpret_cast<void**>(fnResetEx), &hkResetEx, reinterpret_cast<void**>(&oResetEx));
+            MH_CHECK(MH_CreateHook(reinterpret_cast<void**>(fnReset), &hkReset, reinterpret_cast<void**>(&oReset)));
+            MH_CHECK(MH_CreateHook(reinterpret_cast<void**>(fnResetEx), &hkResetEx, reinterpret_cast<void**>(&oResetEx)));
 
-            static MH_STATUS presentStatus = MH_CreateHook(reinterpret_cast<void**>(fnPresent), &hkPresent, reinterpret_cast<void**>(&oPresent));
-            static MH_STATUS presentExStatus = MH_CreateHook(reinterpret_cast<void**>(fnPresentEx), &hkPresentEx, reinterpret_cast<void**>(&oPresentEx));
+            MH_CHECK(MH_CreateHook(reinterpret_cast<void**>(fnPresent), &hkPresent, reinterpret_cast<void**>(&oPresent)));
+            MH_CHECK(MH_CreateHook(reinterpret_cast<void**>(fnPresentEx), &hkPresentEx, reinterpret_cast<void**>(&oPresentEx)));
 
-            MH_EnableHook(fnReset);
-            MH_EnableHook(fnResetEx);
+            MH_CHECK(MH_EnableHook(fnReset));
+            MH_CHECK(MH_EnableHook(fnResetEx));
 
-            MH_EnableHook(fnPresent);
-            MH_EnableHook(fnPresentEx);
+            MH_CHECK(MH_EnableHook(fnPresent));
+            MH_CHECK(MH_EnableHook(fnPresentEx));
         }
     }
 

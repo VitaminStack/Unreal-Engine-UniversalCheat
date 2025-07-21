@@ -11,6 +11,7 @@
 #include "../../../Imgui/imgui_impl_opengl3.h"
 #include "../../../Imgui/imgui_impl_win32.h"
 #include "../../../minhook/MinHook.h"
+#include "../../../Helper/MHCheck.hpp"
 
 #include "../../hooks.hpp"
 
@@ -48,9 +49,9 @@ namespace GL {
                 // Hook
                 LOG_INFO("[+] OpenGL32: fnWglSwapBuffers: 0x%p\n", fnWglSwapBuffers);
 
-                static MH_STATUS wsbStatus = MH_CreateHook(reinterpret_cast<void**>(fnWglSwapBuffers), &hkWglSwapBuffers, reinterpret_cast<void**>(&oWglSwapBuffers));
+                MH_CHECK(MH_CreateHook(reinterpret_cast<void**>(fnWglSwapBuffers), &hkWglSwapBuffers, reinterpret_cast<void**>(&oWglSwapBuffers)));
 
-                MH_EnableHook(fnWglSwapBuffers);
+                MH_CHECK(MH_EnableHook(fnWglSwapBuffers));
             }
         }
     }
