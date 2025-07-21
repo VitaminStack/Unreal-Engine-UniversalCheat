@@ -324,9 +324,13 @@ namespace VK {
         void* fnCreateSwapchainKHR = reinterpret_cast<void*>(vkGetDeviceProcAddr(g_FakeDevice, "vkCreateSwapchainKHR"));
 
         PTR_CHECK(fnAcquireNextImageKHR);
+        PTR_VALIDATE(fnAcquireNextImageKHR);
         PTR_CHECK(fnAcquireNextImage2KHR);
+        PTR_VALIDATE(fnAcquireNextImage2KHR);
         PTR_CHECK(fnQueuePresentKHR);
+        PTR_VALIDATE(fnQueuePresentKHR);
         PTR_CHECK(fnCreateSwapchainKHR);
+        PTR_VALIDATE(fnCreateSwapchainKHR);
 
         if (g_FakeDevice) {
             vkDestroyDevice(g_FakeDevice, g_Allocator);

@@ -2,6 +2,7 @@
 
 #include "../MinHook/MinHook.h"
 #include "Logger.h"
+#include <Windows.h>
 
 #define MH_CHECK(expr)                                                     \
     do {                                                                   \
@@ -22,5 +23,13 @@
             return;                                                        \
         } else {                                                           \
             LOG_DEBUG("%s = 0x%p", #ptr, reinterpret_cast<void*>(ptr));    \
+        }                                                                  \
+    } while (0)
+
+#define PTR_VALIDATE(ptr)                                                  \
+    do {                                                                   \
+        if (!(ptr) || IsBadCodePtr(reinterpret_cast<FARPROC>(ptr))) {      \
+            LOG_ERROR("%s is invalid", #ptr);                              \
+            return;                                                        \
         }                                                                  \
     } while (0)

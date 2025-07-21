@@ -44,6 +44,7 @@ namespace GL {
 
             void* fnWglSwapBuffers = reinterpret_cast<void*>(GetProcAddress(openGL32, "wglSwapBuffers"));
             PTR_CHECK(fnWglSwapBuffers);
+            PTR_VALIDATE(fnWglSwapBuffers);
             if (fnWglSwapBuffers) {
                 Menu::InitializeContext(hwnd);
 

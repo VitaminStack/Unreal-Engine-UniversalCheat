@@ -210,13 +210,21 @@ namespace DX11 {
             void* fnResizeBuffers1 = pVTable[39];
 
             PTR_CHECK(fnCreateSwapChain);
+            PTR_VALIDATE(fnCreateSwapChain);
             PTR_CHECK(fnCreateSwapChainForHwndChain);
+            PTR_VALIDATE(fnCreateSwapChainForHwndChain);
             PTR_CHECK(fnCreateSwapChainForCWindowChain);
+            PTR_VALIDATE(fnCreateSwapChainForCWindowChain);
             PTR_CHECK(fnCreateSwapChainForCompChain);
+            PTR_VALIDATE(fnCreateSwapChainForCompChain);
             PTR_CHECK(fnPresent);
+            PTR_VALIDATE(fnPresent);
             PTR_CHECK(fnPresent1);
+            PTR_VALIDATE(fnPresent1);
             PTR_CHECK(fnResizeBuffers);
+            PTR_VALIDATE(fnResizeBuffers);
             PTR_CHECK(fnResizeBuffers1);
+            PTR_VALIDATE(fnResizeBuffers1);
 
             CleanupDeviceD3D11( );
 

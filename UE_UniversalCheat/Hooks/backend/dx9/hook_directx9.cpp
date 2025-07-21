@@ -110,9 +110,13 @@ namespace DX9 {
             void* fnPresentEx = pVTable[121];
 
             PTR_CHECK(fnReset);
+            PTR_VALIDATE(fnReset);
             PTR_CHECK(fnResetEx);
+            PTR_VALIDATE(fnResetEx);
             PTR_CHECK(fnPresent);
+            PTR_VALIDATE(fnPresent);
             PTR_CHECK(fnPresentEx);
+            PTR_VALIDATE(fnPresentEx);
 
             CleanupDeviceD3D9( );
 

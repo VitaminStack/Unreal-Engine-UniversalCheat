@@ -1,5 +1,6 @@
 #include <Windows.h>
 #include <thread>
+#include <chrono>
 #include <dxgi.h>
 
 #include "utils.hpp"
@@ -77,17 +78,33 @@ namespace Utils {
 		}
 		return result;
 	}
-	void LogLoadedRenderModules()
-	{
-		auto mods = ListLoadedRenderModules();
-		for (const auto& m : mods) {
-			LOG_INFO_ANY("Render API module loaded: ", Logger::ws2s(m.second), " (", RenderingBackendToStr(m.first), ")");
-		}
-		if (mods.empty())
-			LOG_WARN("No known render API modules found!");
-	}
+        void LogLoadedRenderModules()
+        {
+                auto mods = ListLoadedRenderModules();
+                for (const auto& m : mods) {
+                        LOG_INFO_ANY("Render API module loaded: ", Logger::ws2s(m.second), " (", RenderingBackendToStr(m.first), ")");
+                }
+                if (mods.empty())
+                        LOG_WARN("No known render API modules found!");
+        }
+
+        static bool WaitForRenderModules(DWORD timeoutMs = 5000)
+        {
+                const DWORD interval = 200;
+                DWORD waited = 0;
+                while (waited < timeoutMs) {
+                        if (!ListLoadedRenderModules().empty())
+                                return true;
+                        std::this_thread::sleep_for(std::chrono::milliseconds(interval));
+                        waited += interval;
+                }
+                return false;
+        }
         void SetupAllHooks(HWND hWnd)
         {
+                if (!WaitForRenderModules()) {
+                        LOG_WARN("SetupAllHooks: timed out waiting for render modules");
+                }
                 LogLoadedRenderModules();
 
                 // Nur Hooks für tatsächlich geladene Rendering-APIs setzen
