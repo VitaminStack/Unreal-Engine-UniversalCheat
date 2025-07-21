@@ -116,8 +116,6 @@ DWORD WINAPI OverlayThread(LPVOID lpParameter)
         while (DLLrunning) {
             RenderOverlay();
             Sleep(10);
-            if (TestRender)
-                break; // one iteration for quick test
         }
         LOG_INFO("TransRender finished.");
     }
