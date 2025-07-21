@@ -55,12 +55,12 @@ void OpenConsole()
 
 DWORD WINAPI OverlayThread(LPVOID lpParameter)
 {
-    LOG_INFO("OverlayThread gestartet (TID: %d)", GetCurrentThreadId());
+    LOG_INFO("OverlayThread started (TID: %d)", GetCurrentThreadId());
 
     if (ImGUIDiscordRender)
     {
         try {
-            LOG_INFO("ImGUI-Discord-Render-Overlay wird initialisiert");
+            LOG_INFO("Initializing ImGUI-Discord-Render overlay");
             ImGuiOverlay overlay(800, 600, 1234, true); // Letztes Argument aktiviert Debugging
 
             while (DLLrunning) { // WICHTIG: auf DLLrunning prüfen!
@@ -68,15 +68,15 @@ DWORD WINAPI OverlayThread(LPVOID lpParameter)
                 overlay.SendToOverlay();
                 Sleep(16); // 60 FPS
             }
-            LOG_INFO("ImGUIDiscordRender beendet.");
+            LOG_INFO("ImGUIDiscordRender finished.");
         }
         catch (const std::exception& e) {
-            LOG_ERROR("Fehler im ImGUIDiscordRender: %s", e.what());
+            LOG_ERROR("Error in ImGUIDiscordRender: %s", e.what());
         }
     }
     else if (DiscordRender)
     {
-        LOG_INFO("Suche nach Zielprozess für DiscordRender...");
+        LOG_INFO("Searching for target process for DiscordRender...");
         const char* targetExe = "SCUM.exe";
 
         DWORD targetProcessId = GetProcessIDByName(targetExe);
@@ -84,19 +84,19 @@ DWORD WINAPI OverlayThread(LPVOID lpParameter)
             LOG_ERROR("Process not found: %s", targetExe);
             return -1;
         }
-        LOG_INFO("Gefundene Prozess ID: %u", targetProcessId);
+        LOG_INFO("Found process ID: %u", targetProcessId);
 
         // Verbindung zu OverlayCord herstellen
-        LOG_INFO("Verbindung zum OverlayCord Backend wird aufgebaut...");
+        LOG_INFO("Connecting to OverlayCord backend...");
         OverlayCord::Communication::ConnectedProcessInfo processInfo = { 0 };
         processInfo.ProcessId = targetProcessId;
 
         if (!OverlayCord::Communication::ConnectToProcess(processInfo)) {
-            LOG_ERROR("Fehler: Verbindung zum Overlay Backend fehlgeschlagen");
+            LOG_ERROR("Error: Connection to overlay backend failed");
             return -1;
         }
 
-        LOG_INFO("Erfolgreich verbunden mit mapped address: 0x%p", processInfo.MappedAddress);
+        LOG_INFO("Successfully connected with mapped address: 0x%p", processInfo.MappedAddress);
 
         // **Render Loop starten** – sollte intern auch auf DLLrunning prüfen!
         while (DLLrunning) {
@@ -105,48 +105,44 @@ DWORD WINAPI OverlayThread(LPVOID lpParameter)
         }
 
         // Verbindung trennen, wenn der Render-Loop beendet ist
-        LOG_INFO("Render-Loop beendet, trenne Verbindung...");
+        LOG_INFO("Render loop ended, disconnecting...");
         OverlayCord::Communication::DisconnectFromProcess(processInfo);
-        LOG_INFO("Verbindung getrennt");
+        LOG_INFO("Disconnected");
     }
     else if (TransRender)
     {
-        LOG_INFO("TransRender wird gestartet...");
+        LOG_INFO("Starting TransRender...");
         // Falls RenderOverlay() blockiert, baue eine Schleife drumherum!
         while (DLLrunning) {
             RenderOverlay();
             Sleep(10);
         }
-        LOG_INFO("TransRender beendet.");
+        LOG_INFO("TransRender finished.");
     }
     else if (HookRender)
     {
-        LOG_INFO("HookRender wird gestartet...");
+        LOG_INFO("Starting HookRender...");
         if (U::GetRenderingBackend() == NONE) {
             LOG_INFO("[!] Looks like you forgot to set a backend. Will unload after pressing enter...");
             std::cin.get();
             return 0;
         }
 
-        if (MH_Initialize() != MH_OK) {
-            LOG_ERROR("Failed to initialize MinHook");
-            return FALSE;
-        }
         H::Init();
 
         // Idle/Loop, bis DLL entladen werden soll
         while (DLLrunning) {
             Sleep(50);
         }
-        LOG_INFO("HookRender beendet.");
+        LOG_INFO("HookRender finished.");
     }
     else
     {
-        LOG_ERROR("Kein gültiges Render-Modul ausgewählt.");
+        LOG_ERROR("No valid render module selected.");
         return -1;
     }
 
-    LOG_INFO("OverlayThread wird beendet.");
+    LOG_INFO("OverlayThread ending.");
     return 0;
 }
 
@@ -154,11 +150,11 @@ DWORD WINAPI OverlayThread(LPVOID lpParameter)
 DWORD MainThread(HMODULE Module)
 {
     
-    LOG_INFO("MainThread gestartet (TID: %d)", GetCurrentThreadId());
+    LOG_INFO("MainThread started (TID: %d)", GetCurrentThreadId());
 
     if (MainHacking)
     {
-        LOG_INFO("Starte MainHacking...");
+        LOG_INFO("Starting MainHacking...");
         SDK::UEngine* Engine = SDK::UEngine::GetEngine();
         if (!Engine) {
             LOG_ERROR("UEngine pointer is null");
@@ -196,7 +192,7 @@ DWORD MainThread(HMODULE Module)
 
             if (Obj->IsA(SDK::APawn::StaticClass()) || Obj->HasTypeFlag(SDK::EClassCastFlags::Pawn))
             {
-                LOG_DEBUG("Pawn gefunden: %s", Obj->GetFullName());
+                LOG_DEBUG("Pawn found: %s", Obj->GetFullName());
             }
         }
 
@@ -212,19 +208,19 @@ DWORD MainThread(HMODULE Module)
             // Du könntest hier Details loggen, falls gewünscht
         }
 
-        LOG_INFO("Passe InputSettings an...");
+        LOG_INFO("Adjusting InputSettings...");
         SDK::UInputSettings::GetDefaultObj()->ConsoleKeys[0].KeyName = SDK::UKismetStringLibrary::Conv_StringToName(L"F2");
 
         SDK::UObject* NewObject = SDK::UGameplayStatics::SpawnObject(Engine->ConsoleClass, Engine->GameViewport);
         Engine->GameViewport->ViewportConsole = static_cast<SDK::UConsole*>(NewObject);
-        LOG_INFO("MainHacking abgeschlossen.");
+        LOG_INFO("MainHacking completed.");
     }
 
 
     while (DLLrunning) {
         // Beenden der DLL durch Tastendruck
         if (GetAsyncKeyState(VK_END) & 1) {
-            LOG_INFO("Beende Overlay & MainThread durch Tastendruck");
+            LOG_INFO("Stopping overlay and MainThread via key press");
             DLLrunning = false;
             running = false;
             break;
@@ -233,7 +229,7 @@ DWORD MainThread(HMODULE Module)
         Sleep(50);
     }
 
-    LOG_INFO("MainThread wird beendet.");
+    LOG_INFO("MainThread ending.");
     Sleep(500);
     FreeConsole();
     FreeLibraryAndExitThread(Module, 0);
@@ -251,17 +247,18 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD reason, LPVOID lpReserved)
 
         // Konsole+Logger zentral initialisieren
         OpenConsole();
-        LOG_INFO("DLL_PROCESS_ATTACH - Threads werden gestartet");
+        LOG_INFO("DLL_PROCESS_ATTACH - Starting threads");
         LOG_INFO("Rendering backend: %s", U::RenderingBackendToStr(RenderModule));
 
         if (U::GetRenderingBackend() == NONE) {
-            LOG_ERROR("Kein Rendering-Backend gesetzt. DLL wird nicht weiter ausgeführt.");
+            LOG_ERROR("No rendering backend set. DLL will not continue.");
             return FALSE;
         }
 
-        // MinHook einmal initialisieren
-        if (MH_Initialize() != MH_OK) {
-            LOG_ERROR("Failed to initialize MinHook");
+        // Initialize MinHook only once
+        MH_STATUS mhStatus = MH_Initialize();
+        if (mhStatus != MH_OK && mhStatus != MH_ERROR_ALREADY_INITIALIZED) {
+            LOG_ERROR("MinHook initialization failed: %s", MH_StatusToString(mhStatus));
             return FALSE;
         }
 
@@ -278,7 +275,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD reason, LPVOID lpReserved)
         }
     }
     else if (reason == DLL_PROCESS_DETACH && !lpReserved) {
-        LOG_INFO("DLL_PROCESS_DETACH - Threads werden beendet");
+        LOG_INFO("DLL_PROCESS_DETACH - Stopping threads");
         DLLrunning = false; // Threads beenden
         MH_Uninitialize();  // MinHook freigeben
 

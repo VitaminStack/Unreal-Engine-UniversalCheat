@@ -79,30 +79,30 @@ namespace Utils {
 	{
 		auto mods = ListLoadedRenderModules();
 		for (const auto& m : mods) {
-			LOG_INFO_ANY("Render-API Modul geladen: ", Logger::ws2s(m.second), " (", RenderingBackendToStr(m.first), ")");
+			LOG_INFO_ANY("Render API module loaded: ", Logger::ws2s(m.second), " (", RenderingBackendToStr(m.first), ")");
 		}
 		if (mods.empty())
-			LOG_WARN("Keine bekannten Render-API-Module gefunden!");
+			LOG_WARN("No known render API modules found!");
 	}
 	void SetupAllHooks(HWND hWnd)
 	{
 		LogLoadedRenderModules();
 
-		// Jeder Hook-Init ist gegen doppelte Initialisierung/Fehler geschützt!
-		try { DX9::Hook(hWnd);   LOG_INFO("DX9-Hook versucht."); }
+		try { DX9::Hook(hWnd);   LOG_INFO("Attempting DX9 hook."); }
+		try { DX10::Hook(hWnd);  LOG_INFO("Attempting DX10 hook."); }
 		catch (...) {}
-		try { DX10::Hook(hWnd);  LOG_INFO("DX10-Hook versucht."); }
+		try { DX11::Hook(hWnd);  LOG_INFO("Attempting DX11 hook."); }
 		catch (...) {}
-		try { DX11::Hook(hWnd);  LOG_INFO("DX11-Hook versucht."); }
+		try { DX12::Hook(hWnd);  LOG_INFO("Attempting DX12 hook."); }
 		catch (...) {}
-		try { DX12::Hook(hWnd);  LOG_INFO("DX12-Hook versucht."); }
+		try { GL::Hook(hWnd);    LOG_INFO("Attempting OpenGL hook."); }
 		catch (...) {}
-		try { GL::Hook(hWnd);    LOG_INFO("OpenGL-Hook versucht."); }
+		try { VK::Hook(hWnd);    LOG_INFO("Attempting Vulkan hook."); }
 		catch (...) {}
-		try { VK::Hook(hWnd);    LOG_INFO("Vulkan-Hook versucht."); }
+		LOG_INFO("All possible hooks set.");
 		catch (...) {}
 
-		LOG_INFO("Alle möglichen Hooks gesetzt.");
+		LOG_INFO("Alle mÃ¶glichen Hooks gesetzt.");
 	}
 
 	HWND GetProcessWindow( ) {

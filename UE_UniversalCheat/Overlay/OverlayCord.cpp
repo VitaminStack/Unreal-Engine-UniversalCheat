@@ -1,5 +1,5 @@
 ﻿#include "OverlayCord.h"
-#include "Logger.h"
+#include "../Helper/Logger.h"
 #include <cstring>
 
 namespace OverlayCord
