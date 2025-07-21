@@ -95,6 +95,7 @@ namespace Utils {
                 std::unordered_set<RenderingBackend_t> uniqueBackends;
                 for (const auto& m : modules)
                         uniqueBackends.insert(m.first);
+                LOG_DEBUG("SetupAllHooks: %zu unique backends detected", uniqueBackends.size());
 
                 if (uniqueBackends.empty()) {
                         LOG_WARN("SetupAllHooks: No render modules detected, nothing to hook.");
@@ -107,26 +108,32 @@ namespace Utils {
                                 case DIRECTX9:
                                         LOG_INFO("DX9-Hook Attempt.");
                                         DX9::Hook(hWnd);
+                                        LOG_INFO("DX9 hooked");
                                         break;
                                 case DIRECTX10:
                                         LOG_INFO("DX10-Hook Attempt.");
                                         DX10::Hook(hWnd);
+                                        LOG_INFO("DX10 hooked");
                                         break;
                                 case DIRECTX11:
                                         LOG_INFO("DX11-Hook Attempt.");
                                         DX11::Hook(hWnd);
+                                        LOG_INFO("DX11 hooked");
                                         break;
                                 case DIRECTX12:
                                         LOG_INFO("DX12-Hook Attempt.");
                                         DX12::Hook(hWnd);
+                                        LOG_INFO("DX12 hooked");
                                         break;
                                 case OPENGL:
                                         LOG_INFO("OpenGL-Hook Attempt.");
                                         GL::Hook(hWnd);
+                                        LOG_INFO("OpenGL hooked");
                                         break;
                                 case VULKAN:
                                         LOG_INFO("Vulkan-Hook Attempt.");
                                         VK::Hook(hWnd);
+                                        LOG_INFO("Vulkan hooked");
                                         break;
                                 default:
                                         break;

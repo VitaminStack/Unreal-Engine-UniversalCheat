@@ -204,6 +204,15 @@ namespace DX10 {
             void* fnResizeBuffers = pVTable[13];
             void* fnResizeBuffers1 = pVTable[39];
 
+            PTR_CHECK(fnCreateSwapChain);
+            PTR_CHECK(fnCreateSwapChainForHwndChain);
+            PTR_CHECK(fnCreateSwapChainForCWindowChain);
+            PTR_CHECK(fnCreateSwapChainForCompChain);
+            PTR_CHECK(fnPresent);
+            PTR_CHECK(fnPresent1);
+            PTR_CHECK(fnResizeBuffers);
+            PTR_CHECK(fnResizeBuffers1);
+
             CleanupDeviceD3D10( );
 
             MH_CHECK(MH_CreateHook(reinterpret_cast<void*>(fnCreateSwapChain), &hkCreateSwapChain, reinterpret_cast<void**>(&oCreateSwapChain)));

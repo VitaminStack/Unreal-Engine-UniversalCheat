@@ -43,6 +43,7 @@ namespace GL {
             LOG_INFO("[+] OpenGL32: ImageBase: 0x%p\n", openGL32);
 
             void* fnWglSwapBuffers = reinterpret_cast<void*>(GetProcAddress(openGL32, "wglSwapBuffers"));
+            PTR_CHECK(fnWglSwapBuffers);
             if (fnWglSwapBuffers) {
                 Menu::InitializeContext(hwnd);
 

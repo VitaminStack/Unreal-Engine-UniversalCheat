@@ -225,6 +225,16 @@ namespace DX12 {
 
             void* fnExecuteCommandLists = pCommandQueueVTable[10];
 
+            PTR_CHECK(fnCreateSwapChain);
+            PTR_CHECK(fnCreateSwapChainForHwndChain);
+            PTR_CHECK(fnCreateSwapChainForCWindowChain);
+            PTR_CHECK(fnCreateSwapChainForCompChain);
+            PTR_CHECK(fnPresent);
+            PTR_CHECK(fnPresent1);
+            PTR_CHECK(fnResizeBuffers);
+            PTR_CHECK(fnResizeBuffers1);
+            PTR_CHECK(fnExecuteCommandLists);
+
             if (g_pd3dCommandQueue) {
                 g_pd3dCommandQueue->Release( );
                 g_pd3dCommandQueue = NULL;

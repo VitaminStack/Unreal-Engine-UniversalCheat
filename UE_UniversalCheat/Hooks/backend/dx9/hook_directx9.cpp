@@ -109,6 +109,11 @@ namespace DX9 {
             void* fnPresent = pVTable[17];
             void* fnPresentEx = pVTable[121];
 
+            PTR_CHECK(fnReset);
+            PTR_CHECK(fnResetEx);
+            PTR_CHECK(fnPresent);
+            PTR_CHECK(fnPresentEx);
+
             CleanupDeviceD3D9( );
 
             MH_CHECK(MH_CreateHook(reinterpret_cast<void*>(fnReset), &hkReset, reinterpret_cast<void**>(&oReset)));
