@@ -13,6 +13,8 @@
 #include "../backend/dx12/hook_directx12.hpp"
 #include "../backend/opengl/hook_opengl.hpp"
 #include "../backend/vulkan/hook_vulkan.hpp"
+#include <unordered_set>
+#include <exception>
 
 #define RB2STR(x) case x: return #x
 
@@ -84,26 +86,62 @@ namespace Utils {
 		if (mods.empty())
 			LOG_WARN("No known render API modules found!");
 	}
-	void SetupAllHooks(HWND hWnd)
-	{
-		LogLoadedRenderModules();
+        void SetupAllHooks(HWND hWnd)
+        {
+                LogLoadedRenderModules();
 
-		// Jeder Hook-Init ist gegen doppelte Initialisierung/Fehler geschützt!
-		try { DX9::Hook(hWnd);   LOG_INFO("DX9-Hook Attempt."); }
-		catch (...) {}
-		try { DX10::Hook(hWnd);  LOG_INFO("DX10-Hook Attempt."); }
-		catch (...) {}
-		try { DX11::Hook(hWnd);  LOG_INFO("DX11-Hook Attempt."); }
-		catch (...) {}
-		try { DX12::Hook(hWnd);  LOG_INFO("DX12-Hook Attempt."); }
-		catch (...) {}
-		try { GL::Hook(hWnd);    LOG_INFO("OpenGL-Hook Attempt."); }
-		catch (...) {}
-		try { VK::Hook(hWnd);    LOG_INFO("Vulkan-Hook Attempt."); }
-		catch (...) {}
+                // Nur Hooks für tatsächlich geladene Rendering-APIs setzen
+                auto modules = ListLoadedRenderModules();
+                std::unordered_set<RenderingBackend_t> uniqueBackends;
+                for (const auto& m : modules)
+                        uniqueBackends.insert(m.first);
 
-		LOG_INFO("all Hooks set.");
-	}
+                if (uniqueBackends.empty()) {
+                        LOG_WARN("SetupAllHooks: No render modules detected, nothing to hook.");
+                        return;
+                }
+
+                for (auto backend : uniqueBackends) {
+                        try {
+                                switch (backend) {
+                                case DIRECTX9:
+                                        LOG_INFO("DX9-Hook Attempt.");
+                                        DX9::Hook(hWnd);
+                                        break;
+                                case DIRECTX10:
+                                        LOG_INFO("DX10-Hook Attempt.");
+                                        DX10::Hook(hWnd);
+                                        break;
+                                case DIRECTX11:
+                                        LOG_INFO("DX11-Hook Attempt.");
+                                        DX11::Hook(hWnd);
+                                        break;
+                                case DIRECTX12:
+                                        LOG_INFO("DX12-Hook Attempt.");
+                                        DX12::Hook(hWnd);
+                                        break;
+                                case OPENGL:
+                                        LOG_INFO("OpenGL-Hook Attempt.");
+                                        GL::Hook(hWnd);
+                                        break;
+                                case VULKAN:
+                                        LOG_INFO("Vulkan-Hook Attempt.");
+                                        VK::Hook(hWnd);
+                                        break;
+                                default:
+                                        break;
+                                }
+                        }
+                        catch (const std::exception& e) {
+                                LOG_ERROR_ANY("Hooking failed for backend ", RenderingBackendToStr(backend), ": ", e.what());
+                        }
+                        catch (...) {
+                                LOG_ERROR_ANY("Hooking failed for backend ", RenderingBackendToStr(backend));
+                        }
+                }
+
+                LOG_INFO("all Hooks set.");
+        }
 
 	HWND GetProcessWindow( ) {
 		HWND hwnd = nullptr;
