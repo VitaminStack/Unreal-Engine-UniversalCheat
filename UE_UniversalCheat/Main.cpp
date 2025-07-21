@@ -19,6 +19,7 @@ bool MainHacking = false;
 bool ImGUIDiscordRender = false;
 bool DiscordRender = false;
 bool TransRender = false;
+bool TestRender = false;
 
 
 //HOOKRENDERING
@@ -109,13 +110,14 @@ DWORD WINAPI OverlayThread(LPVOID lpParameter)
         OverlayCord::Communication::DisconnectFromProcess(processInfo);
         LOG_INFO("Disconnected");
     }
-    else if (TransRender)
+    else if (TransRender || TestRender)
     {
         LOG_INFO("Starting TransRender...");
-        // Falls RenderOverlay() blockiert, baue eine Schleife drumherum!
         while (DLLrunning) {
             RenderOverlay();
             Sleep(10);
+            if (TestRender)
+                break; // one iteration for quick test
         }
         LOG_INFO("TransRender finished.");
     }

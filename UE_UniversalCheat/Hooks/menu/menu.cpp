@@ -28,7 +28,7 @@ namespace Menu {
         io.IniFilename = io.LogFilename = nullptr;
     }
 
-    void Render()
+    void RenderGameMenu()
     {
         if (!bShowMenu)
             return;
@@ -206,6 +206,19 @@ namespace Menu {
             // 4)  restliche Features (Cheats etc.)
             Cheese::ApplyCheese();
         }
+    }
+
+    void RenderDebugMenu()
+    {
+        ImGui::Begin("DebugMenu");
+        ImGui::Text("Overlay running");
+        ImGui::End();
+    }
+
+    void Render()
+    {
+        RenderGameMenu();
+        RenderDebugMenu();
     }
 
 } // namespace Menu
