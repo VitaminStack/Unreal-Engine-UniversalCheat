@@ -32,8 +32,5 @@ An experimental cheat framework for Unreal Engine-based games, focusing on modul
 ## Contributing
 Pull requests and suggestions are welcome! For major changes, please open an issue first to discuss what you would like to change.
 
-## License
-This project is licensed under the MIT License. See the LICENSE file for details.
-
 Rendering with Transparent Overlay in Scum:
 ![Beispielbild](https://github.com/VitaminStack/Unreal-Engine-UniversalCheat/blob/main/Screen.PNG)
