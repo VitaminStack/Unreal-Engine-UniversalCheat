@@ -88,21 +88,21 @@ namespace Utils {
 	{
 		LogLoadedRenderModules();
 
-		try { DX9::Hook(hWnd);   LOG_INFO("Attempting DX9 hook."); }
-		try { DX10::Hook(hWnd);  LOG_INFO("Attempting DX10 hook."); }
+		// Jeder Hook-Init ist gegen doppelte Initialisierung/Fehler geschützt!
+		try { DX9::Hook(hWnd);   LOG_INFO("DX9-Hook Attempt."); }
 		catch (...) {}
-		try { DX11::Hook(hWnd);  LOG_INFO("Attempting DX11 hook."); }
+		try { DX10::Hook(hWnd);  LOG_INFO("DX10-Hook Attempt."); }
 		catch (...) {}
-		try { DX12::Hook(hWnd);  LOG_INFO("Attempting DX12 hook."); }
+		try { DX11::Hook(hWnd);  LOG_INFO("DX11-Hook Attempt."); }
 		catch (...) {}
-		try { GL::Hook(hWnd);    LOG_INFO("Attempting OpenGL hook."); }
+		try { DX12::Hook(hWnd);  LOG_INFO("DX12-Hook Attempt."); }
 		catch (...) {}
-		try { VK::Hook(hWnd);    LOG_INFO("Attempting Vulkan hook."); }
+		try { GL::Hook(hWnd);    LOG_INFO("OpenGL-Hook Attempt."); }
 		catch (...) {}
-		LOG_INFO("All possible hooks set.");
+		try { VK::Hook(hWnd);    LOG_INFO("Vulkan-Hook Attempt."); }
 		catch (...) {}
 
-		LOG_INFO("Alle möglichen Hooks gesetzt.");
+		LOG_INFO("all Hooks set.");
 	}
 
 	HWND GetProcessWindow( ) {
