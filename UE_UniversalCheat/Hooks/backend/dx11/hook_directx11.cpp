@@ -211,16 +211,16 @@ namespace DX11 {
 
             CleanupDeviceD3D11( );
 
-            MH_CHECK(MH_CreateHook(reinterpret_cast<void**>(fnCreateSwapChain), &hkCreateSwapChain, reinterpret_cast<void**>(&oCreateSwapChain)));
-            MH_CHECK(MH_CreateHook(reinterpret_cast<void**>(fnCreateSwapChainForHwndChain), &hkCreateSwapChainForHwnd, reinterpret_cast<void**>(&oCreateSwapChainForHwnd)));
-            MH_CHECK(MH_CreateHook(reinterpret_cast<void**>(fnCreateSwapChainForCWindowChain), &hkCreateSwapChainForCoreWindow, reinterpret_cast<void**>(&oCreateSwapChainForCoreWindow)));
-            MH_CHECK(MH_CreateHook(reinterpret_cast<void**>(fnCreateSwapChainForCompChain), &hkCreateSwapChainForComposition, reinterpret_cast<void**>(&oCreateSwapChainForComposition)));
+            MH_CHECK(MH_CreateHook(reinterpret_cast<void*>(fnCreateSwapChain), &hkCreateSwapChain, reinterpret_cast<void**>(&oCreateSwapChain)));
+            MH_CHECK(MH_CreateHook(reinterpret_cast<void*>(fnCreateSwapChainForHwndChain), &hkCreateSwapChainForHwnd, reinterpret_cast<void**>(&oCreateSwapChainForHwnd)));
+            MH_CHECK(MH_CreateHook(reinterpret_cast<void*>(fnCreateSwapChainForCWindowChain), &hkCreateSwapChainForCoreWindow, reinterpret_cast<void**>(&oCreateSwapChainForCoreWindow)));
+            MH_CHECK(MH_CreateHook(reinterpret_cast<void*>(fnCreateSwapChainForCompChain), &hkCreateSwapChainForComposition, reinterpret_cast<void**>(&oCreateSwapChainForComposition)));
 
-            MH_CHECK(MH_CreateHook(reinterpret_cast<void**>(fnPresent), &hkPresent, reinterpret_cast<void**>(&oPresent)));
-            MH_CHECK(MH_CreateHook(reinterpret_cast<void**>(fnPresent1), &hkPresent1, reinterpret_cast<void**>(&oPresent1)));
+            MH_CHECK(MH_CreateHook(reinterpret_cast<void*>(fnPresent), &hkPresent, reinterpret_cast<void**>(&oPresent)));
+            MH_CHECK(MH_CreateHook(reinterpret_cast<void*>(fnPresent1), &hkPresent1, reinterpret_cast<void**>(&oPresent1)));
 
-            MH_CHECK(MH_CreateHook(reinterpret_cast<void**>(fnResizeBuffers), &hkResizeBuffers, reinterpret_cast<void**>(&oResizeBuffers)));
-            MH_CHECK(MH_CreateHook(reinterpret_cast<void**>(fnResizeBuffers1), &hkResizeBuffers1, reinterpret_cast<void**>(&oResizeBuffers1)));
+            MH_CHECK(MH_CreateHook(reinterpret_cast<void*>(fnResizeBuffers), &hkResizeBuffers, reinterpret_cast<void**>(&oResizeBuffers)));
+            MH_CHECK(MH_CreateHook(reinterpret_cast<void*>(fnResizeBuffers1), &hkResizeBuffers1, reinterpret_cast<void**>(&oResizeBuffers1)));
 
             MH_CHECK(MH_EnableHook(fnCreateSwapChain));
             MH_CHECK(MH_EnableHook(fnCreateSwapChainForHwndChain));

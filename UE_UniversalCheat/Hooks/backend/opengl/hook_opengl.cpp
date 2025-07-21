@@ -49,7 +49,7 @@ namespace GL {
                 // Hook
                 LOG_INFO("[+] OpenGL32: fnWglSwapBuffers: 0x%p\n", fnWglSwapBuffers);
 
-                MH_CHECK(MH_CreateHook(reinterpret_cast<void**>(fnWglSwapBuffers), &hkWglSwapBuffers, reinterpret_cast<void**>(&oWglSwapBuffers)));
+                MH_CHECK(MH_CreateHook(reinterpret_cast<void*>(fnWglSwapBuffers), &hkWglSwapBuffers, reinterpret_cast<void**>(&oWglSwapBuffers)));
 
                 MH_CHECK(MH_EnableHook(fnWglSwapBuffers));
             }

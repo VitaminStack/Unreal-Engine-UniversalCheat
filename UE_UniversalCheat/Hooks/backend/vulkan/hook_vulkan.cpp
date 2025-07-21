@@ -337,10 +337,10 @@ namespace VK {
             LOG("[+] Vulkan: fnQueuePresentKHR: 0x%p\n", fnQueuePresentKHR);
             LOG("[+] Vulkan: fnCreateSwapchainKHR: 0x%p\n", fnCreateSwapchainKHR);
 
-            MH_CHECK(MH_CreateHook(reinterpret_cast<void**>(fnAcquireNextImageKHR), &hkAcquireNextImageKHR, reinterpret_cast<void**>(&oAcquireNextImageKHR)));
-            MH_CHECK(MH_CreateHook(reinterpret_cast<void**>(fnAcquireNextImage2KHR), &hkAcquireNextImage2KHR, reinterpret_cast<void**>(&oAcquireNextImage2KHR)));
-            MH_CHECK(MH_CreateHook(reinterpret_cast<void**>(fnQueuePresentKHR), &hkQueuePresentKHR, reinterpret_cast<void**>(&oQueuePresentKHR)));
-            MH_CHECK(MH_CreateHook(reinterpret_cast<void**>(fnCreateSwapchainKHR), &hkCreateSwapchainKHR, reinterpret_cast<void**>(&oCreateSwapchainKHR)));
+            MH_CHECK(MH_CreateHook(reinterpret_cast<void*>(fnAcquireNextImageKHR), &hkAcquireNextImageKHR, reinterpret_cast<void**>(&oAcquireNextImageKHR)));
+            MH_CHECK(MH_CreateHook(reinterpret_cast<void*>(fnAcquireNextImage2KHR), &hkAcquireNextImage2KHR, reinterpret_cast<void**>(&oAcquireNextImage2KHR)));
+            MH_CHECK(MH_CreateHook(reinterpret_cast<void*>(fnQueuePresentKHR), &hkQueuePresentKHR, reinterpret_cast<void**>(&oQueuePresentKHR)));
+            MH_CHECK(MH_CreateHook(reinterpret_cast<void*>(fnCreateSwapchainKHR), &hkCreateSwapchainKHR, reinterpret_cast<void**>(&oCreateSwapchainKHR)));
 
             MH_CHECK(MH_EnableHook(fnAcquireNextImageKHR));
             MH_CHECK(MH_EnableHook(fnAcquireNextImage2KHR));

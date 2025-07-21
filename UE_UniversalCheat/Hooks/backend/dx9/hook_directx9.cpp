@@ -111,11 +111,11 @@ namespace DX9 {
 
             CleanupDeviceD3D9( );
 
-            MH_CHECK(MH_CreateHook(reinterpret_cast<void**>(fnReset), &hkReset, reinterpret_cast<void**>(&oReset)));
-            MH_CHECK(MH_CreateHook(reinterpret_cast<void**>(fnResetEx), &hkResetEx, reinterpret_cast<void**>(&oResetEx)));
+            MH_CHECK(MH_CreateHook(reinterpret_cast<void*>(fnReset), &hkReset, reinterpret_cast<void**>(&oReset)));
+            MH_CHECK(MH_CreateHook(reinterpret_cast<void*>(fnResetEx), &hkResetEx, reinterpret_cast<void**>(&oResetEx)));
 
-            MH_CHECK(MH_CreateHook(reinterpret_cast<void**>(fnPresent), &hkPresent, reinterpret_cast<void**>(&oPresent)));
-            MH_CHECK(MH_CreateHook(reinterpret_cast<void**>(fnPresentEx), &hkPresentEx, reinterpret_cast<void**>(&oPresentEx)));
+            MH_CHECK(MH_CreateHook(reinterpret_cast<void*>(fnPresent), &hkPresent, reinterpret_cast<void**>(&oPresent)));
+            MH_CHECK(MH_CreateHook(reinterpret_cast<void*>(fnPresentEx), &hkPresentEx, reinterpret_cast<void**>(&oPresentEx)));
 
             MH_CHECK(MH_EnableHook(fnReset));
             MH_CHECK(MH_EnableHook(fnResetEx));
