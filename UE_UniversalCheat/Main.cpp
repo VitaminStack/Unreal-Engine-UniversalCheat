@@ -49,7 +49,7 @@ void OpenConsole()
     SetConsoleTitleA("Overlay/Debug Console");
 
     // Testausgabe für dich:
-    printf("[Konsole] erfolgreich gestartet!\n");
+    LOG_INFO("Console started successfully\n");
 }
 
 
@@ -128,7 +128,10 @@ DWORD WINAPI OverlayThread(LPVOID lpParameter)
             return 0;
         }
 
-        MH_Initialize();
+        if (MH_Initialize() != MH_OK) {
+            LOG_ERROR("Failed to initialize MinHook");
+            return FALSE;
+        }
         H::Init();
 
         // Idle/Loop, bis DLL entladen werden soll
@@ -157,9 +160,29 @@ DWORD MainThread(HMODULE Module)
     {
         LOG_INFO("Starte MainHacking...");
         SDK::UEngine* Engine = SDK::UEngine::GetEngine();
+        if (!Engine) {
+            LOG_ERROR("UEngine pointer is null");
+            return 0;
+        }
         SDK::UWorld* World = SDK::UWorld::GetWorld();
-        SDK::APlayerController* MyController = World->OwningGameInstance->LocalPlayers[0]->PlayerController;
-        LOG_INFO("Engine gefunden: %s", Engine->ConsoleClass->GetFullName());
+        if (!World || !World->OwningGameInstance) {
+            LOG_ERROR("World or OwningGameInstance invalid");
+            return 0;
+        }
+        auto& LocalPlayers = World->OwningGameInstance->LocalPlayers;
+        if (LocalPlayers.Num() <= 0 || !LocalPlayers[0]) {
+            LOG_ERROR("LocalPlayer not found");
+            return 0;
+        }
+        SDK::APlayerController* MyController = LocalPlayers[0]->PlayerController;
+        if (!MyController) {
+            LOG_ERROR("PlayerController not found");
+            return 0;
+        }
+        if (Engine->ConsoleClass)
+            LOG_INFO("Engine found: %s", Engine->ConsoleClass->GetFullName());
+        else
+            LOG_INFO("Engine found but ConsoleClass is null");
 
         for (int i = 0; i < SDK::UObject::GObjects->Num(); i++)
         {
@@ -229,7 +252,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD reason, LPVOID lpReserved)
         // Konsole+Logger zentral initialisieren
         OpenConsole();
         LOG_INFO("DLL_PROCESS_ATTACH - Threads werden gestartet");
-        printf("[+] Rendering backend: %s\n", U::RenderingBackendToStr(RenderModule));
+        LOG_INFO("Rendering backend: %s", U::RenderingBackendToStr(RenderModule));
 
         if (U::GetRenderingBackend() == NONE) {
             LOG_ERROR("Kein Rendering-Backend gesetzt. DLL wird nicht weiter ausgeführt.");
@@ -237,11 +260,22 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD reason, LPVOID lpReserved)
         }
 
         // MinHook einmal initialisieren
-        MH_Initialize();
+        if (MH_Initialize() != MH_OK) {
+            LOG_ERROR("Failed to initialize MinHook");
+            return FALSE;
+        }
 
         // Threads starten
         hOverlayThread = CreateThread(0, 0, (LPTHREAD_START_ROUTINE)OverlayThread, hModule, 0, 0);
+        if (!hOverlayThread) {
+            LOG_ERROR("Failed to create OverlayThread");
+            return FALSE;
+        }
         hMainThread = CreateThread(0, 0, (LPTHREAD_START_ROUTINE)MainThread, hModule, 0, 0);
+        if (!hMainThread) {
+            LOG_ERROR("Failed to create MainThread");
+            return FALSE;
+        }
     }
     else if (reason == DLL_PROCESS_DETACH && !lpReserved) {
         LOG_INFO("DLL_PROCESS_DETACH - Threads werden beendet");

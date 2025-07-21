@@ -1,4 +1,5 @@
 ﻿#include "helper.h"
+#include "Logger.h"
 
 
 Vector3 Vector3::operator+(const Vector3& v) const {
@@ -251,7 +252,7 @@ void PrintActorType(SDK::AActor* Actor)
     }
 
     // Ergebnis ausgeben
-    printf("Actor Name: %s | Type: %s\n", ActorName.c_str(), ActorType.c_str());
+    LOG_INFO("Actor Name: %s | Type: %s\n", ActorName.c_str(), ActorType.c_str());
 }
 
 

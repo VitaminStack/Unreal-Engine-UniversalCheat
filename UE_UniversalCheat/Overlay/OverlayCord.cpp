@@ -1,4 +1,5 @@
 ﻿#include "OverlayCord.h"
+#include "Logger.h"
 #include <cstring>
 
 namespace OverlayCord
@@ -27,10 +28,10 @@ namespace OverlayCord
 
 		void SendFrame(ConnectedProcessInfo& processInfo, UINT width, UINT height, void* frame, UINT size)
 		{
-			if (!processInfo.MappedAddress) {
-				printf("Fehler: `MappedAddress` ist NULL! Ist die Verbindung zu OverlayCord aktiv?\n");
-				return;
-			}
+                if (!processInfo.MappedAddress) {
+                                LOG_ERROR("MappedAddress is NULL. Is OverlayCord connected?");
+                                return;
+                        }
 
 			processInfo.MappedAddress->Width = width;
 			processInfo.MappedAddress->Height = height;
@@ -187,10 +188,14 @@ HWND GetHWNDByProcessID(DWORD processID) {
 	return nullptr;
 }
 void StartRenderLoop(OverlayCord::Communication::ConnectedProcessInfo& processInfo) {
-	printf("[>] Starting render loop...\n");
+        LOG_INFO("Starting render loop...");
 
 	// Erstelle ein 1280x720 Framebuffer für das Overlay
-	OverlayCord::Drawing::Frame mainFrame = OverlayCord::Drawing::CreateFrame(2560, 1440);
+        OverlayCord::Drawing::Frame mainFrame = OverlayCord::Drawing::CreateFrame(2560, 1440);
+        if (!mainFrame.Buffer) {
+                LOG_ERROR("Failed to allocate frame buffer");
+                return;
+        }
 
 	
 	OverlayCord::Drawing::Pixel textColor = { 0, 0, 255, 255 }; // Weißer Text
@@ -208,10 +213,21 @@ void StartRenderLoop(OverlayCord::Communication::ConnectedProcessInfo& processIn
 		OverlayCord::Drawing::CleanFrame(mainFrame);
 
 		SDK::UEngine* Engine = SDK::UEngine::GetEngine();
-		SDK::UWorld* World = SDK::UWorld::GetWorld();
-		if (!World) continue;
-		SDK::APlayerController* MyController = World->OwningGameInstance->LocalPlayers[0]->PlayerController;
-		if (!MyController) continue;
+                SDK::UWorld* World = SDK::UWorld::GetWorld();
+                if (!World || !World->OwningGameInstance) {
+                        LOG_WARN("World or OwningGameInstance invalid");
+                        continue;
+                }
+                auto& LocalPlayers = World->OwningGameInstance->LocalPlayers;
+                if (LocalPlayers.Num() <= 0 || !LocalPlayers[0]) {
+                        LOG_WARN("LocalPlayer not available");
+                        continue;
+                }
+                SDK::APlayerController* MyController = LocalPlayers[0]->PlayerController;
+                if (!MyController) {
+                        LOG_WARN("PlayerController invalid");
+                        continue;
+                }
 		SDK::ULevel* Level = World->PersistentLevel;
 		SDK::TArray<SDK::AActor*>& Actors = Level->Actors;
 		for (SDK::AActor* Actor : Actors)
@@ -258,7 +274,7 @@ void StartRenderLoop(OverlayCord::Communication::ConnectedProcessInfo& processIn
 		OverlayCord::Communication::SendFrame(processInfo, mainFrame.Width, mainFrame.Height, mainFrame.Buffer, mainFrame.Size);
 	}
 
-	printf("[>] Render loop stopped.\n");
+	LOG_INFO("[>] Render loop stopped.\n");
 }
 
 #pragma comment(lib, "d3d11.lib")

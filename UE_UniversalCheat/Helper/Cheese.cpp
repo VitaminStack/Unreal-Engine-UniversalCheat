@@ -1,4 +1,5 @@
 ﻿#include "Cheese.h"
+#include "Logger.h"
 
 // Static Members (jetzt exakt wie in Cheese.h!)
 std::vector<CheeseOption> Cheese::CheeseList;
@@ -12,7 +13,7 @@ void Cheese::Initialize(SDK::APlayerController* Controller) {
 
     // PointerChecks wie gehabt
     if (!PointerChecks::IsValidPtr(Controller, "Controller")) {
-        printf("[Cheese] Controller pointer invalid - aborting initialization\n");
+        LOG_ERROR("[Cheese] Controller pointer invalid - aborting initialization\n");
         return;
     }
 
@@ -24,10 +25,10 @@ void Cheese::Initialize(SDK::APlayerController* Controller) {
             if (!PointerChecks::IsValidPtr(Controller->Character, "Controller->Character")) return;
             __try {
                 Controller->Character->bCanBeDamaged = !enable;
-                printf("[GODMODE_SIMPLE] %s successfully\n", enable ? "Enabled" : "Disabled");
+                LOG_INFO("[GODMODE_SIMPLE] %s successfully\n", enable ? "Enabled" : "Disabled");
             }
             __except (EXCEPTION_EXECUTE_HANDLER) {
-                printf("[GODMODE_SIMPLE] Exception occurred during assignment\n");
+                LOG_ERROR("[GODMODE_SIMPLE] Exception occurred during assignment\n");
             }
         },
         [Controller]() {
@@ -35,10 +36,10 @@ void Cheese::Initialize(SDK::APlayerController* Controller) {
             if (!PointerChecks::IsValidPtr(Controller->Character, "Controller->Character")) return;
             __try {
                 Controller->Character->bCanBeDamaged = true;
-                printf("[GODMODE_SIMPLE] Reset to default successfully\n");
+                LOG_INFO("[GODMODE_SIMPLE] Reset to default successfully\n");
             }
             __except (EXCEPTION_EXECUTE_HANDLER) {
-                printf("[GODMODE_SIMPLE] Exception occurred during reset\n");
+                LOG_ERROR("[GODMODE_SIMPLE] Exception occurred during reset\n");
             }
         }
     );
@@ -57,16 +58,16 @@ void Cheese::Initialize(SDK::APlayerController* Controller) {
                 if (enable) {
                     Movement->SetMovementMode(SDK::EMovementMode::MOVE_Flying, 5);
                     FlyhackActive = true;
-                    printf("[FLYHACK] Enabled successfully\n");
+                    LOG_INFO("[FLYHACK] Enabled successfully\n");
                 }
                 else {
                     Movement->SetMovementMode(DefaultMovementMode, 0);
                     FlyhackActive = false;
-                    printf("[FLYHACK] Disabled successfully\n");
+                    LOG_INFO("[FLYHACK] Disabled successfully\n");
                 }
             }
             __except (EXCEPTION_EXECUTE_HANDLER) {
-                printf("[FLYHACK] Exception occurred during SetMovementMode\n");
+                LOG_ERROR("[FLYHACK] Exception occurred during SetMovementMode\n");
             }
         },
         [Controller, DefaultMovementMode]() {
@@ -76,10 +77,10 @@ void Cheese::Initialize(SDK::APlayerController* Controller) {
             __try {
                 Controller->Character->CharacterMovement->SetMovementMode(DefaultMovementMode, 0);
                 FlyhackActive = false;
-                printf("[FLYHACK] Reset to default successfully\n");
+                LOG_INFO("[FLYHACK] Reset to default successfully\n");
             }
             __except (EXCEPTION_EXECUTE_HANDLER) {
-                printf("[FLYHACK] Exception occurred during reset\n");
+                LOG_ERROR("[FLYHACK] Exception occurred during reset\n");
             }
         }
     );
@@ -194,7 +195,7 @@ void Cheese::Initialize(SDK::APlayerController* Controller) {
         });
   
 
-    printf("[Cheese] Initialization completed with %zu Cheese loaded\n", CheeseList.size());
+    LOG_INFO("[Cheese] Initialization completed with %zu Cheese loaded\n", CheeseList.size());
 }
 
 // 2. Cheese anwenden
