@@ -218,7 +218,6 @@ namespace Menu {
     void Render()
     {
         RenderGameMenu();
-        RenderDebugMenu();
     }
 
 } // namespace Menu
