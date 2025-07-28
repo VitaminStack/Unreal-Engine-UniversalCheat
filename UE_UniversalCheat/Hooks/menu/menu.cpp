@@ -39,6 +39,8 @@ namespace Menu {
         // Prüfe Engine, World, Controller
         SDK::UEngine* Engine = SDK::UEngine::GetEngine();
         SDK::UWorld* World = SDK::UWorld::GetWorld();
+        if (!World && Engine && Engine->GameViewport)
+            World = Engine->GameViewport->World;
         SDK::APlayerController* MyController = nullptr;
         bool worldValid = SimpleESP::IsWorldValid(World);
 
