@@ -57,11 +57,13 @@ void Cheese::Initialize(SDK::APlayerController* Controller) {
             __try {
                 if (enable) {
                     Movement->SetMovementMode(SDK::EMovementMode::MOVE_Flying, 5);
+                    Movement->MaxFlySpeed = Movement->MaxWalkSpeed;
                     FlyhackActive = true;
                     LOG_INFO("[FLYHACK] Enabled successfully\n");
                 }
                 else {
                     Movement->SetMovementMode(DefaultMovementMode, 0);
+                    Movement->MaxFlySpeed = Movement->MaxWalkSpeed;
                     FlyhackActive = false;
                     LOG_INFO("[FLYHACK] Disabled successfully\n");
                 }
@@ -76,6 +78,7 @@ void Cheese::Initialize(SDK::APlayerController* Controller) {
             if (!PointerChecks::IsValidPtr(Controller->Character->CharacterMovement, "CharacterMovement")) return;
             __try {
                 Controller->Character->CharacterMovement->SetMovementMode(DefaultMovementMode, 0);
+                Controller->Character->CharacterMovement->MaxFlySpeed = Controller->Character->CharacterMovement->MaxWalkSpeed;
                 FlyhackActive = false;
                 LOG_INFO("[FLYHACK] Reset to default successfully\n");
             }
@@ -263,21 +266,35 @@ void Cheese::FlyhackControl(SDK::APlayerController* Controller) {
     if (PointerChecks::IsValidPtr(World, "World"))
         Delta = static_cast<float>(SDK::UGameplayStatics::GetWorldDeltaSeconds(World));
 
-    const float Speed = 600.f;
-    const float Boost = 6.f;
+    if (!PointerChecks::IsValidPtr(Controller->Character->CharacterMovement, "CharacterMovement")) return;
+    SDK::UCharacterMovementComponent* Movement = Controller->Character->CharacterMovement;
+
+    static float ShiftHold = 0.f;
+    if (GetAsyncKeyState(VK_SHIFT) & 0x8000)
+        ShiftHold += Delta;
+    else
+        ShiftHold = 0.f;
+
+    Movement->MaxFlySpeed = Movement->MaxWalkSpeed * (1.f + ShiftHold);
+
+    const float Speed = Movement->MaxFlySpeed;
 
     SDK::FVector Launch{ 0.f, 0.f, 0.f };
 
     if (GetAsyncKeyState(VK_SHIFT) & 0x8000) {
         if (!PointerChecks::IsValidPtr(Controller->PlayerCameraManager, "PlayerCameraManager")) return;
         SDK::FVector ForwardVector = Controller->PlayerCameraManager->GetActorForwardVector();
-        Launch += ForwardVector * Speed * Boost * Delta;
+        Launch += ForwardVector * Speed * Delta;
     }
     if (GetAsyncKeyState(VK_SPACE) & 0x8000) {
-        Launch.Z += Speed * Delta;
+        if (!PointerChecks::IsValidPtr(Controller->PlayerCameraManager, "PlayerCameraManager")) return;
+        SDK::FVector UpVector = Controller->PlayerCameraManager->GetActorUpVector();
+        Launch += UpVector * Speed * Delta;
     }
     if (GetAsyncKeyState(VK_CONTROL) & 0x8000) {
-        Launch.Z -= Speed * Delta;
+        if (!PointerChecks::IsValidPtr(Controller->PlayerCameraManager, "PlayerCameraManager")) return;
+        SDK::FVector UpVector = Controller->PlayerCameraManager->GetActorUpVector();
+        Launch -= UpVector * Speed * Delta;
     }
 
     if (!Launch.IsZero())
