@@ -68,7 +68,7 @@ namespace Menu {
         static bool initialized = false;
         if (!initialized && MyController) {
             Cheese::Initialize(MyController);
-            Cheese::ActivateCheese("Godmode", true);
+            Cheese::ActivateCheese("Godmode", false);
             Cheese::ActivateCheese("Flyhack", false);
             Cheese::ActivateCheese("Unl Ammo", false);
             Cheese::ActivateCheese("No Spread", false);

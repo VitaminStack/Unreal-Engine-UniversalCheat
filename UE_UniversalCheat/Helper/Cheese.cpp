@@ -257,23 +257,29 @@ void Cheese::ActivateCheese(const std::string& cheeseName, bool enable) {
 void Cheese::FlyhackControl(SDK::APlayerController* Controller) {
     if (!PointerChecks::IsValidPtr(Controller, "Controller")) return;
     if (!PointerChecks::IsValidPtr(Controller->Character, "Controller->Character")) return;
-    if (!PointerChecks::IsValidPtr(Controller->Character->CharacterMovement, "CharacterMovement")) return;
 
-    SDK::UCharacterMovementComponent* Movement = Controller->Character->CharacterMovement;
-    SDK::FVector Velocity = Movement->Velocity;
-    float Speed = 600.0f;
-    float BoostMultiplier = 6.0f;
+    SDK::UWorld* World = SDK::UWorld::GetWorld();
+    float Delta = 0.016f;
+    if (PointerChecks::IsValidPtr(World, "World"))
+        Delta = static_cast<float>(SDK::UGameplayStatics::GetWorldDeltaSeconds(World));
+
+    const float Speed = 600.f;
+    const float Boost = 6.f;
+
+    SDK::FVector Launch{ 0.f, 0.f, 0.f };
 
     if (GetAsyncKeyState(VK_SHIFT) & 0x8000) {
         if (!PointerChecks::IsValidPtr(Controller->PlayerCameraManager, "PlayerCameraManager")) return;
         SDK::FVector ForwardVector = Controller->PlayerCameraManager->GetActorForwardVector();
-        Velocity += ForwardVector * Speed * BoostMultiplier * 0.056f;
+        Launch += ForwardVector * Speed * Boost * Delta;
     }
     if (GetAsyncKeyState(VK_SPACE) & 0x8000) {
-        Velocity.Z += Speed * 0.056f;
+        Launch.Z += Speed * Delta;
     }
     if (GetAsyncKeyState(VK_CONTROL) & 0x8000) {
-        Velocity.Z -= Speed * 0.036f;
+        Launch.Z -= Speed * Delta;
     }
-    Movement->Velocity = Velocity;
+
+    if (!Launch.IsZero())
+        Controller->Character->LaunchCharacter(Launch, true, true);
 }
