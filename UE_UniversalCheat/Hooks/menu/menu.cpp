@@ -161,10 +161,12 @@ namespace Menu {
                 reinterpret_cast<std::uintptr_t>(CurrentLevel) +
                 static_cast<std::uintptr_t>(selectedArrayOffset));
 
-            AllEntsLevel = ActorArray ? ActorArray->Num() : 0;
+            bool actorArrayValid = PointerChecks::IsValidPtr(ActorArray, "ActorArray") &&
+                ActorArray->IsValid();
+            AllEntsLevel = actorArrayValid ? ActorArray->Num() : 0;
 
             // 1)  neue / bisher unbekannte Actor in den Cache aufnehmen
-            for (int i = 0; i < AllEntsLevel; ++i)
+            for (int i = 0; actorArrayValid && i < AllEntsLevel; ++i)
             {
                 if (SDK::AActor* a = (*ActorArray)[i])
                     g_EntityCache.Add(a);              // (emplace ignoriert Duplikate)
@@ -190,11 +192,7 @@ namespace Menu {
             {
                 const auto& dyn = dynList[i];
                 const auto* st = statList[i];                   // garantiert vorhanden
-
-                // Pawn-Filter (optional)
-                if (PawnFilterEnabled && st->actor &&
-                    !st->actor->IsA(SDK::APawn::StaticClass()))
-                    continue;
+                               
 
                 std::string distanceText = std::to_string(dyn.distance);
                 distanceText = distanceText.substr(0, distanceText.find('.') + 2);

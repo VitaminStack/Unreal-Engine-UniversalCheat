@@ -204,12 +204,9 @@ void Cheese::Initialize(SDK::APlayerController* Controller) {
 // 2. Cheese anwenden
 void Cheese::ApplyCheese() {
     SDK::UEngine* Engine = SDK::UEngine::GetEngine();
-    if (!PointerChecks::IsValidPtr(Engine, "UEngine")) return;
-
     SDK::UWorld* World = SDK::UWorld::GetWorld();
-    if (!PointerChecks::IsValidPtr(World, "UWorld")) return;
-
-    if (!PointerChecks::IsValidPtr(World->OwningGameInstance, "OwningGameInstance")) return;
+    if (!World && Engine && Engine->GameViewport)
+        World = Engine->GameViewport->World;
 
     auto& LocalPlayers = World->OwningGameInstance->LocalPlayers;
     if (LocalPlayers.Num() <= 0 || !PointerChecks::IsValidPtr(LocalPlayers[0], "LocalPlayer[0]")) return;
@@ -262,7 +259,7 @@ void Cheese::FlyhackControl(SDK::APlayerController* Controller) {
     if (!PointerChecks::IsValidPtr(Controller->Character, "Controller->Character")) return;
 
     SDK::UWorld* World = SDK::UWorld::GetWorld();
-    float Delta = 0.016f;
+    float Delta = 0.16f;
     if (PointerChecks::IsValidPtr(World, "World"))
         Delta = static_cast<float>(SDK::UGameplayStatics::GetWorldDeltaSeconds(World));
 
