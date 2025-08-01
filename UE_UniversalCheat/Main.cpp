@@ -202,7 +202,10 @@ DWORD MainThread(HMODULE Module)
 
         for (SDK::AActor* Actor : Actors)
         {
-            if (!Actor || !Actor->IsA(SDK::EClassCastFlags::Pawn) || !Actor->IsA(SDK::APawn::StaticClass()))
+            if (!PointerChecks::IsValidPtr(Actor, "AActor") ||
+                !PointerChecks::IsValidPtr(Actor->Class, "ActorClass") ||
+                !Actor->IsA(SDK::EClassCastFlags::Pawn) ||
+                !Actor->IsA(SDK::APawn::StaticClass()))
                 continue;
 
             SDK::APawn* Pawn = static_cast<SDK::APawn*>(Actor);

@@ -230,10 +230,13 @@ void StartRenderLoop(OverlayCord::Communication::ConnectedProcessInfo& processIn
                 }
 		SDK::ULevel* Level = World->PersistentLevel;
 		SDK::TArray<SDK::AActor*>& Actors = Level->Actors;
-		for (SDK::AActor* Actor : Actors)
-		{
-			if (!Actor || !Actor->IsA(SDK::EClassCastFlags::Actor) || !Actor->IsA(SDK::AActor::StaticClass()))
-				continue;
+                for (SDK::AActor* Actor : Actors)
+                {
+                        if (!PointerChecks::IsValidPtr(Actor, "AActor") ||
+                            !PointerChecks::IsValidPtr(Actor->Class, "ActorClass") ||
+                            !Actor->IsA(SDK::EClassCastFlags::Actor) ||
+                            !Actor->IsA(SDK::AActor::StaticClass()))
+                                continue;
 			std::string ActorName = Actor->GetName();
 			float fov = MyController->PlayerCameraManager->GetFOVAngle();
 			SDK::FVector camPos = MyController->PlayerCameraManager->GetCameraLocation();

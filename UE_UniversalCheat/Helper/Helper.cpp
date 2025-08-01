@@ -147,10 +147,14 @@ bool SimpleESP::DrawActorESP(
     float DistCap,
     bool onlyPawns
 ) {
-    if (!Actor) return false;
-    if (onlyPawns && !Actor->IsA(SDK::APawn::StaticClass())) return false;
+    if (!PointerChecks::IsValidPtr(Actor, "AActor"))
+        return false;
+    if (!PointerChecks::IsValidPtr(Actor->Class, "ActorClass"))
+        return false;
+    if (onlyPawns && !Actor->IsA(SDK::APawn::StaticClass()))
+        return false;
 
-    std::string ActorName = Actor->GetName();
+    std::string ActorName = PointerChecks::IsValidPtr(Actor->Class, "ActorClass") ? Actor->GetName() : "Unknown";
     float fov = camera.Fov;
     SDK::FVector camPos = camera.CamPos;
     SDK::FRotator rotation = camera.Rotation;
@@ -184,7 +188,9 @@ bool SimpleESP::DrawActorESP(
     float distance = camPos.GetDistanceTo(actorPos) / 100.0f;
 
     if (distance > 2.f && distance < DistCap) {
-        std::string aName = Actor->Class->GetName();
+        std::string aName = "Unknown";
+        if (PointerChecks::IsValidPtr(Actor->Class, "ActorClass"))
+            aName = Actor->Class->GetName();
         RenderActorInfo(drawlist, screenPos, color, aName, distance);
         return true;
     }
