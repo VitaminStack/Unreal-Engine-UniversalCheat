@@ -190,8 +190,16 @@ HWND GetHWNDByProcessID(DWORD processID) {
 void StartRenderLoop(OverlayCord::Communication::ConnectedProcessInfo& processInfo) {
         LOG_INFO("Starting render loop...");
 
-	// Erstelle ein 1280x720 Framebuffer für das Overlay
-        OverlayCord::Drawing::Frame mainFrame = OverlayCord::Drawing::CreateFrame(2560, 1440);
+        HWND gameWindow = GetHWNDByProcessID(processInfo.ProcessId);
+        if (gameWindow) {
+                RECT rect{};
+                if (GetWindowRect(gameWindow, &rect)) {
+                        Screen_w = rect.right - rect.left;
+                        Screen_h = rect.bottom - rect.top;
+                }
+        }
+
+        OverlayCord::Drawing::Frame mainFrame = OverlayCord::Drawing::CreateFrame(Screen_w, Screen_h);
         if (!mainFrame.Buffer) {
                 LOG_ERROR("Failed to allocate frame buffer");
                 return;
@@ -247,13 +255,13 @@ void StartRenderLoop(OverlayCord::Communication::ConnectedProcessInfo& processIn
 
 				if (actorPos.IsZero()) continue;  // ✅ Abbruch bei ungültiger Position
 				Vector2 screenPos;
-				if (!UEWorldToScreen(Vector3(actorPos.X, actorPos.Y, actorPos.Z), screenPos,
-					Vector3(rotation.Pitch, rotation.Yaw, rotation.Roll),
-					Vector3(camPos.X, camPos.Y, camPos.Z), fov, 1440, 2560)) {
-					continue;
-				}
-				if (screenPos.x > 0 && screenPos.x < 2560 && screenPos.y > 0 && screenPos.y < 1440)
-				{
+                                if (!UEWorldToScreen(Vector3(actorPos.X, actorPos.Y, actorPos.Z), screenPos,
+                                        Vector3(rotation.Pitch, rotation.Yaw, rotation.Roll),
+                                        Vector3(camPos.X, camPos.Y, camPos.Z), fov, Screen_h, Screen_w)) {
+                                        continue;
+                                }
+                                if (screenPos.x > 0 && screenPos.x < Screen_w && screenPos.y > 0 && screenPos.y < Screen_h)
+                                {
 					float distance = camPos.GetDistanceTo(actorPos) / 100.0f;
 					if (distance > 2.f && distance) {
 						std::string aName = Actor->Class->GetName();
@@ -356,8 +364,8 @@ bool ImGuiOverlay::CreateRenderTarget() {
 void ImGuiOverlay::Render() {
 	context->OMSetRenderTargets(1, &renderTargetView, nullptr);
 
-	ImGuiIO& io = ImGui::GetIO();
-	io.DisplaySize = ImVec2(2560, 1440);  // Setze eine Standardgröße
+        ImGuiIO& io = ImGui::GetIO();
+        io.DisplaySize = ImVec2(static_cast<float>(width), static_cast<float>(height));
 	ImGui_ImplDX11_NewFrame();
 	ImGui::NewFrame();
 

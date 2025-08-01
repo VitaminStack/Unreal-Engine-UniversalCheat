@@ -83,6 +83,9 @@ public:
 D3DXMATRIX ToMatrix(const Vector3& Rotation);
 bool UEWorldToScreen(const Vector3& worldLoc, Vector2& screenPos, Vector3 Rotation, Vector3 CamPos, float FOV, int ScreenHöhe, int ScreenBreite);
 
+extern int Screen_w;
+extern int Screen_h;
+
 // ✅ String- und Name-Konvertierung
 SDK::FName CreateFName(UC::FString Name);
 UC::FString ConvertToFString(const char* CharArray);

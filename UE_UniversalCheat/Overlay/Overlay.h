@@ -24,6 +24,8 @@ extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg
 
 extern bool running;
 extern HWND hWndOverlay;
+extern int Screen_w;
+extern int Screen_h;
 
 
 

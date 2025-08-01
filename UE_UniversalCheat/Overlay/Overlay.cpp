@@ -35,18 +35,16 @@ void ChangeClickability(bool canClick, HWND hwnd) {
         SetWindowLong(hwnd, GWL_EXSTYLE, exStyle | WS_EX_TRANSPARENT);   // Klicks durchlassen
     }
 }
-void SetOverlayToTarget(HWND WindowHandle, HWND OverlayHandle, Vector2& ScreenXY)
+void SetOverlayToTarget(HWND WindowHandle, HWND OverlayHandle)
 {
-    RECT rect;
-    GetWindowRect(WindowHandle, &rect);
+    RECT rect{};
+    if (!GetWindowRect(WindowHandle, &rect))
+        return;
 
-    int Breite = (rect.right - rect.left);
-    int Höhe = (rect.bottom - rect.top);
+    Screen_w = rect.right - rect.left;
+    Screen_h = rect.bottom - rect.top;
 
-    ScreenXY.x = static_cast<float>(rect.right - rect.left);
-    ScreenXY.y = static_cast<float>(rect.bottom - rect.top) + 90;
-
-    MoveWindow(OverlayHandle, rect.left, rect.top, Breite, Höhe, true);
+    MoveWindow(OverlayHandle, rect.left, rect.top, Screen_w, Screen_h, TRUE);
 }
 
 // DirectX11 Geräteerstellung
@@ -133,6 +131,7 @@ void RenderOverlay()
 {
     WNDCLASSEX wc = { sizeof(WNDCLASSEX), ACS_TRANSPARENT, WindowProc, 0L, 0L, GetModuleHandle(NULL), NULL, LoadCursor(NULL, IDC_ARROW), NULL, NULL, _T("Overlay"), NULL };
     RegisterClassEx(&wc);
+    HWND targetWindow = GetForegroundWindow();
     HWND hWndOverlay = CreateWindowExW(
         WS_EX_TOPMOST | WS_EX_LAYERED | WS_EX_TRANSPARENT,  // Layered + Transparent
         wc.lpszClassName,
@@ -154,6 +153,9 @@ void RenderOverlay()
 
     ::ShowWindow(hWndOverlay, SW_SHOWDEFAULT);
     ::UpdateWindow(hWndOverlay);
+
+    if (targetWindow)
+        SetOverlayToTarget(targetWindow, hWndOverlay);
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     ImGuiIO& io = ImGui::GetIO(); (void)io;
@@ -168,6 +170,8 @@ void RenderOverlay()
     MSG msg;
     while (running)
     {
+        if (targetWindow)
+            SetOverlayToTarget(targetWindow, hWndOverlay);
         // ✅ Windows-Nachrichten verarbeiten
         while (PeekMessage(&msg, NULL, 0U, 0U, PM_REMOVE)) {
             TranslateMessage(&msg);

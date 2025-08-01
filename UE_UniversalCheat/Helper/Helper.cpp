@@ -179,11 +179,11 @@ bool SimpleESP::DrawActorESP(
     if (!UEWorldToScreen(
         Vector3(actorPos.X, actorPos.Y, actorPos.Z), screenPos,
         Vector3(rotation.Pitch, rotation.Yaw, rotation.Roll),
-        Vector3(camPos.X, camPos.Y, camPos.Z), fov, 1440, 2560)) {
+        Vector3(camPos.X, camPos.Y, camPos.Z), fov, Screen_h, Screen_w)) {
         return false;
     }
 
-    if (!IsActorVisible(screenPos, 2560, 1440)) return false;
+    if (!IsActorVisible(screenPos, Screen_w, Screen_h)) return false;
 
     float distance = camPos.GetDistanceTo(actorPos) / 100.0f;
 
@@ -430,10 +430,10 @@ void Raycaster::DrawDebugRay(ImDrawList* drawlist, SDK::APlayerController* Contr
 
         if (UEWorldToScreen(Vector3(Result.StartPoint.X, Result.StartPoint.Y, Result.StartPoint.Z), ScreenStart,
             Vector3(Rotation.Pitch, Rotation.Yaw, Rotation.Roll),
-            Vector3(CamPos.X, CamPos.Y, CamPos.Z), fov, 1440, 2560) &&
+            Vector3(CamPos.X, CamPos.Y, CamPos.Z), fov, Screen_h, Screen_w) &&
             UEWorldToScreen(Vector3(Result.EndPoint.X, Result.EndPoint.Y, Result.EndPoint.Z), ScreenEnd,
                 Vector3(Rotation.Pitch, Rotation.Yaw, Rotation.Roll),
-                Vector3(CamPos.X, CamPos.Y, CamPos.Z), fov, 1440, 2560)) {
+                Vector3(CamPos.X, CamPos.Y, CamPos.Z), fov, Screen_h, Screen_w)) {
 
             ImU32 color = Result.bHit ? IM_COL32(255, 0, 0, 255) : IM_COL32(0, 255, 0, 255);
             drawlist->AddLine(ImVec2(ScreenStart.x, ScreenStart.y), ImVec2(ScreenEnd.x, ScreenEnd.y), color, 2.0f);
