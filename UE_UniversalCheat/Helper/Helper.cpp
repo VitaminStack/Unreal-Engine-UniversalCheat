@@ -488,7 +488,8 @@ void EntityCache::Remove(const SDK::AActor* actor)
 
 void EntityCache::Refresh(const SDK::FVector& camPos,
     const SDK::FRotator& camRot,
-    float fov, int screenW, int screenH)
+    float fov, int screenW, int screenH,
+    float distCap, bool onlyPawns)
 {
     const uint32_t newIdx = writeIdx_ ^ 1;                   // 0 ↔ 1
     auto& dyn = dynBuf_[newIdx];
@@ -509,6 +510,9 @@ void EntityCache::Refresh(const SDK::FVector& camPos,
         if (!ptr)                               // Actor-Pointer selbst prüfen
             continue;
 
+        if (onlyPawns && !ptr->IsA(SDK::APawn::StaticClass()))
+            continue;
+
         CachedEntityDynamic d;
 
         /* ALT
@@ -526,6 +530,9 @@ void EntityCache::Refresh(const SDK::FVector& camPos,
 
         d.screenPos = scr;
         d.distance = VectorUtils::CalculateDistance(camPos, d.worldPos) / 100.f;
+
+        if (d.distance > distCap || d.distance <= 2.f)
+            continue;
 
         dyn.emplace_back(std::move(d));
         sPtr.emplace_back(&st);                          // Zeiger auf statische Infos

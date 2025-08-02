@@ -170,8 +170,6 @@ namespace Menu {
             {
                 if (SDK::AActor* a = (*ActorArray)[i])
                 {
-                    if (PawnFilterEnabled && !a->IsA(SDK::APawn::StaticClass()))
-                        continue;
                     g_EntityCache.Add(a);              // (emplace ignoriert Duplikate)
                     ++AllEntsLevel;
                 }
@@ -186,7 +184,9 @@ namespace Menu {
                 gameCam.Rotation,
                 gameCam.Fov,
                 static_cast<int>(io.DisplaySize.x),
-                static_cast<int>(io.DisplaySize.y));
+                static_cast<int>(io.DisplaySize.y),
+                Distcap,
+                PawnFilterEnabled);
 
             ValidEntsLevel = 0;
 

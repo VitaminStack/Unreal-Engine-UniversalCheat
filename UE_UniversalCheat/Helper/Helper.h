@@ -178,7 +178,8 @@ public:
     /* Update-Thread – pro Frame aufrufen */
     void Refresh(const SDK::FVector& camPos,
         const SDK::FRotator& camRot,
-        float fov, int screenW, int screenH);
+        float fov, int screenW, int screenH,
+        float distCap, bool onlyPawns);
 
     /* Render-Thread – lock-frei */
     const std::vector<CachedEntityDynamic>& DrawList() const;
