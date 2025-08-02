@@ -259,7 +259,7 @@ void Cheese::FlyhackControl(SDK::APlayerController* Controller) {
     if (!PointerChecks::IsValidPtr(Controller->Character, "Controller->Character")) return;
 
     SDK::UWorld* World = SDK::UWorld::GetWorld();
-    float Delta = 0.16f;
+    float Delta = 0.016f;
     if (PointerChecks::IsValidPtr(World, "World"))
         Delta = static_cast<float>(SDK::UGameplayStatics::GetWorldDeltaSeconds(World));
 
