@@ -151,6 +151,7 @@ void UObject::ExecuteUbergraph(int32 EntryPoint)
 // Predefined Function
 // Checks if this class has a certain base
 
+
 bool UStruct::IsSubclassOf(const UStruct* Base) const
 {
 	if (!Base)
