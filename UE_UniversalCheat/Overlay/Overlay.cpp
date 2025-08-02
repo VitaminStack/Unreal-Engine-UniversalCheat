@@ -47,6 +47,35 @@ void SetOverlayToTarget(HWND WindowHandle, HWND OverlayHandle)
     MoveWindow(OverlayHandle, rect.left, rect.top, Screen_w, Screen_h, TRUE);
 }
 
+// Ermittelt das Hauptfenster des aktuellen Prozesses und ignoriert die Debug-Konsole
+struct HandleData {
+    DWORD processId;
+    HWND consoleWindow;
+    HWND result;
+};
+
+BOOL CALLBACK EnumWindowsCallback(HWND hwnd, LPARAM lParam)
+{
+    HandleData* data = reinterpret_cast<HandleData*>(lParam);
+    DWORD pid = 0;
+    GetWindowThreadProcessId(hwnd, &pid);
+
+    if (pid == data->processId && hwnd != data->consoleWindow &&
+        GetWindow(hwnd, GW_OWNER) == NULL && IsWindowVisible(hwnd))
+    {
+        data->result = hwnd;
+        return FALSE; // Stoppe die Enumeration, Hauptfenster gefunden
+    }
+    return TRUE; // Suche fortsetzen
+}
+
+HWND GetProcessWindow()
+{
+    HandleData data = { GetCurrentProcessId(), GetConsoleWindow(), nullptr };
+    EnumWindows(EnumWindowsCallback, reinterpret_cast<LPARAM>(&data));
+    return data.result;
+}
+
 // DirectX11 Geräteerstellung
 bool CreateDeviceD3D(HWND hWnd)
 {
@@ -131,7 +160,7 @@ void RenderOverlay()
 {
     WNDCLASSEX wc = { sizeof(WNDCLASSEX), ACS_TRANSPARENT, WindowProc, 0L, 0L, GetModuleHandle(NULL), NULL, LoadCursor(NULL, IDC_ARROW), NULL, NULL, _T("Overlay"), NULL };
     RegisterClassEx(&wc);
-    HWND targetWindow = GetForegroundWindow();
+    HWND targetWindow = GetProcessWindow();
     HWND hWndOverlay = CreateWindowExW(
         WS_EX_TOPMOST | WS_EX_LAYERED | WS_EX_TRANSPARENT,  // Layered + Transparent
         wc.lpszClassName,
@@ -170,6 +199,7 @@ void RenderOverlay()
     MSG msg;
     while (running)
     {
+        targetWindow = GetProcessWindow();
         if (targetWindow)
             SetOverlayToTarget(targetWindow, hWndOverlay);
         // ✅ Windows-Nachrichten verarbeiten
