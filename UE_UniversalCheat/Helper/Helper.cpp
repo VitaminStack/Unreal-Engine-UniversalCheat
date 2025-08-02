@@ -1,4 +1,4 @@
-﻿#include "Helper.h"
+﻿#include "helper.h"
 #include "Logger.h"
 
 
@@ -525,11 +525,6 @@ void EntityCache::Refresh(const SDK::FVector& camPos,
     for (const auto& [ptr, st] : statics_)
     {
         if (!ptr) {                            // ungültiger Pointer
-            toRemove.push_back(ptr);
-            continue;
-        }
-
-        if (!PointerChecks::IsValidPtr(const_cast<SDK::AActor*>(ptr), "AActor")) {
             toRemove.push_back(ptr);
             continue;
         }
