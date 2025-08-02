@@ -164,21 +164,43 @@ namespace Menu {
             bool actorArrayValid = PointerChecks::IsValidPtr(ActorArray, "ActorArray") &&
                 ActorArray->IsValid();
 
-            // 1)  neue / bisher unbekannte Actor in den Cache aufnehmen
+            // 1)  Kamera updaten (für Distanzberechnung)
+            static Cam gameCam;
+            gameCam.UpdateCam(MyController->PlayerCameraManager);
+
+            // 2)  Actor-Cache mit Live-Filter synchronisieren
             AllEntsLevel = 0;
             for (int i = 0; actorArrayValid && i < ActorArray->Num(); ++i)
             {
                 if (SDK::AActor* a = (*ActorArray)[i])
                 {
-                    g_EntityCache.Add(a);              // (emplace ignoriert Duplikate)
                     ++AllEntsLevel;
+
+                    if (PawnFilterEnabled && !a->IsA(SDK::APawn::StaticClass()))
+                    {
+                        g_EntityCache.Remove(a);
+                        continue;
+                    }
+
+                    SDK::FVector pos;
+                    if (!g_EntityCache.GetWorldPos(a, pos))
+                    {
+                        g_EntityCache.Remove(a);
+                        continue;
+                    }
+
+                    float dist = VectorUtils::CalculateDistance(gameCam.CamPos, pos) / 100.f;
+                    if (dist > Distcap || dist <= 2.f)
+                    {
+                        g_EntityCache.Remove(a);
+                        continue;
+                    }
+
+                    g_EntityCache.Add(a);              // nur relevante Actor cachen
                 }
             }
 
-            // 2)  Kamera updaten und Cache-Refresh (nur dynamische Daten)
-            static Cam gameCam;
-            gameCam.UpdateCam(MyController->PlayerCameraManager);
-
+            // 3)  Cache-Refresh (nur dynamische Daten)
             ImGuiIO& io = ImGui::GetIO();
             g_EntityCache.Refresh(gameCam.CamPos,
                 gameCam.Rotation,

@@ -467,6 +467,13 @@ void EntityCache::Add(const SDK::AActor* actor)
 {
     if (!actor) return;
 
+    // Bereits vorhanden? → nur Shared-Lock nötig
+    {
+        std::shared_lock rlock(staticsMx_);
+        if (statics_.find(actor) != statics_.end())
+            return;
+    }
+
     CachedEntityStatic cs;
     cs.actor = actor;
     cs.label = actor->GetName();                       // UE-SDK liefert std::string
@@ -482,6 +489,14 @@ void EntityCache::Add(const SDK::AActor* actor)
 // ➖ Actor aus Cache löschen
 void EntityCache::Remove(const SDK::AActor* actor)
 {
+    if (!actor) return;
+
+    {
+        std::shared_lock rlock(staticsMx_);
+        if (statics_.find(actor) == statics_.end())
+            return;
+    }
+
     std::unique_lock lock(staticsMx_);
     statics_.erase(actor);
 }
@@ -498,6 +513,8 @@ void EntityCache::Refresh(const SDK::FVector& camPos,
     dyn.clear();
     sPtr.clear();
 
+    std::vector<const SDK::AActor*> toRemove;
+
     std::shared_lock lock(staticsMx_);
     dyn.reserve(statics_.size());
     sPtr.reserve(statics_.size());
@@ -507,18 +524,21 @@ void EntityCache::Refresh(const SDK::FVector& camPos,
 
     for (const auto& [ptr, st] : statics_)
     {
-        if (!ptr)                               // Actor-Pointer selbst prüfen
+        if (!ptr) {                            // ungültiger Pointer
+            toRemove.push_back(ptr);
             continue;
+        }
 
-        if (onlyPawns && !ptr->IsA(SDK::APawn::StaticClass()))
+        if (onlyPawns && !ptr->IsA(SDK::APawn::StaticClass())) {
+            toRemove.push_back(ptr);
             continue;
+        }
 
         CachedEntityDynamic d;
-
-        /* ALT
-            d.worldPos = ptr->RootComponent->RelativeLocation;
-           NEU – sichere Variante */
-        GetWorldPos(ptr, d.worldPos);
+        if (!GetWorldPos(ptr, d.worldPos)) {   // Actor bereits zerstört?
+            toRemove.push_back(ptr);
+            continue;
+        }
 
         Vector2 scr{};
         if (!UEWorldToScreen(
@@ -526,19 +546,31 @@ void EntityCache::Refresh(const SDK::FVector& camPos,
             scr,
             camRotV, camPosV, fov,
             screenH, screenW))
-            continue;                                    // ausserhalb → skip
+        {
+            toRemove.push_back(ptr);           // ausserhalb → entfernen
+            continue;
+        }
 
         d.screenPos = scr;
         d.distance = VectorUtils::CalculateDistance(camPos, d.worldPos) / 100.f;
 
-        if (d.distance > distCap || d.distance <= 2.f)
+        if (d.distance > distCap || d.distance <= 2.f) {
+            toRemove.push_back(ptr);
             continue;
+        }
 
         dyn.emplace_back(std::move(d));
-        sPtr.emplace_back(&st);                          // Zeiger auf statische Infos
+        sPtr.emplace_back(&st);                // Zeiger auf statische Infos
     }
 
     writeIdx_.store(newIdx, std::memory_order_release);
+
+    lock.unlock();
+    if (!toRemove.empty()) {
+        std::unique_lock wlock(staticsMx_);
+        for (auto* p : toRemove)
+            statics_.erase(p);
+    }
 }
 
 // lock-freier Zugriff aus dem Render-Thread
