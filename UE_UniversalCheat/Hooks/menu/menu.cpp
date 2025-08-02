@@ -168,35 +168,26 @@ namespace Menu {
             static Cam gameCam;
             gameCam.UpdateCam(MyController->PlayerCameraManager);
 
-            // 2)  Actor-Cache mit Live-Filter synchronisieren
-            AllEntsLevel = 0;
-            for (int i = 0; actorArrayValid && i < ActorArray->Num(); ++i)
+            // 2)  Actor-Cache synchronisieren (nur gelegentlich scannen)
+            static int scanCounter = 0;
+            constexpr int scanInterval = 20; // alle 20 Frames neuen Actors suchen
+
+            if (actorArrayValid && (++scanCounter % scanInterval == 0))
             {
-                if (SDK::AActor* a = (*ActorArray)[i])
+                AllEntsLevel = ActorArray->Num();
+                for (int i = 0; i < ActorArray->Num(); ++i)
                 {
-                    ++AllEntsLevel;
-
-                    if (PawnFilterEnabled && !a->IsA(SDK::APawn::StaticClass()))
+                    if (SDK::AActor* a = (*ActorArray)[i])
                     {
-                        g_EntityCache.Remove(a);
-                        continue;
-                    }
+                        if (!PointerChecks::IsValidPtr(a, "AActor") ||
+                            !PointerChecks::IsValidPtr(a->Class, "ActorClass"))
+                            continue;
 
-                    SDK::FVector pos;
-                    if (!g_EntityCache.GetWorldPos(a, pos))
-                    {
-                        g_EntityCache.Remove(a);
-                        continue;
-                    }
+                        if (PawnFilterEnabled && !a->IsA(SDK::APawn::StaticClass()))
+                            continue;
 
-                    float dist = VectorUtils::CalculateDistance(gameCam.CamPos, pos) / 100.f;
-                    if (dist > Distcap || dist <= 2.f)
-                    {
-                        g_EntityCache.Remove(a);
-                        continue;
+                        g_EntityCache.Add(a); // Cache nur potenziell relevante Actor
                     }
-
-                    g_EntityCache.Add(a);              // nur relevante Actor cachen
                 }
             }
 
@@ -210,23 +201,19 @@ namespace Menu {
                 Distcap,
                 PawnFilterEnabled);
 
-            ValidEntsLevel = 0;
-
             auto& dynList = g_EntityCache.DrawList();
             auto& statList = g_EntityCache.StaticDrawList();     // 1-zu-1 parallel
+            ValidEntsLevel = static_cast<int>(dynList.size());
 
             for (size_t i = 0; i < dynList.size(); ++i)
             {
                 const auto& dyn = dynList[i];
                 const auto* st = statList[i];                   // garantiert vorhanden
-                               
 
                 std::string distanceText = std::to_string(dyn.distance);
                 distanceText = distanceText.substr(0, distanceText.find('.') + 2);
                 drawlist->AddText(ImVec2(CalcMiddlePos(dyn.screenPos.x, st->label.c_str()), dyn.screenPos.y), st->color, st->label.c_str());
                 drawlist->AddText(ImVec2(CalcMiddlePos(dyn.screenPos.x, (distanceText + "m").c_str()), dyn.screenPos.y + 15), st->color, (distanceText + "m").c_str());
-
-                ++ValidEntsLevel;
             }
 
 
