@@ -295,5 +295,5 @@ void Cheese::FlyhackControl(SDK::APlayerController* Controller) {
     }
 
     if (!Launch.IsZero())
-        Movement->Velocity = Launch;
+        Movement->Velocity += Launch;
 }

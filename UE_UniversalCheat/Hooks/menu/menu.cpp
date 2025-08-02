@@ -163,13 +163,18 @@ namespace Menu {
 
             bool actorArrayValid = PointerChecks::IsValidPtr(ActorArray, "ActorArray") &&
                 ActorArray->IsValid();
-            AllEntsLevel = actorArrayValid ? ActorArray->Num() : 0;
 
             // 1)  neue / bisher unbekannte Actor in den Cache aufnehmen
-            for (int i = 0; actorArrayValid && i < AllEntsLevel; ++i)
+            AllEntsLevel = 0;
+            for (int i = 0; actorArrayValid && i < ActorArray->Num(); ++i)
             {
                 if (SDK::AActor* a = (*ActorArray)[i])
+                {
+                    if (PawnFilterEnabled && !a->IsA(SDK::APawn::StaticClass()))
+                        continue;
                     g_EntityCache.Add(a);              // (emplace ignoriert Duplikate)
+                    ++AllEntsLevel;
+                }
             }
 
             // 2)  Kamera updaten und Cache-Refresh (nur dynamische Daten)
