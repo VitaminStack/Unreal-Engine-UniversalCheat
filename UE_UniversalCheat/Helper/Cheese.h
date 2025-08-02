@@ -3,7 +3,7 @@
 #include <string>
 #include <vector>
 #include <functional>
-#include <Windows.h>
+#include <windows.h>
 #include <cstdio>
 #include "../SDK/Engine_classes.hpp"
 
@@ -15,7 +15,7 @@ class PointerChecks {
 public:
     static inline bool IsReadable(const void* ptr, size_t size = sizeof(void*))
     {
-        // 1:1 die gleiche Logik wie unten – nur Parameter ist const
+        // 1:1 die gleiche Logik wie unten â€“ nur Parameter ist const
         if (!ptr) {
             return false;
         }

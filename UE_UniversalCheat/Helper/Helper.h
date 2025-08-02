@@ -1,7 +1,7 @@
 ﻿#pragma once
 
 #include "../SDK/Engine_classes.hpp"
-#include <Windows.h>
+#include <windows.h>
 #include <iostream>
 #include <directxmath.h>
 #include <d3dx9.h>
