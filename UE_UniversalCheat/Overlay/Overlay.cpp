@@ -166,12 +166,23 @@ void RenderOverlay()
     ImGui_ImplDX11_Init(g_pd3dDevice, g_pd3dDeviceContext);
     bool show_another_window = false;
     ImVec4 clear_color = ImVec4(0.0f, 0.0f, 0.0f, 0.0f);
-
+    HWND consoleWindow = GetConsoleWindow();
     MSG msg;
     while (running)
     {
-        if (targetWindow)
-            SetOverlayToTarget(targetWindow, hWndOverlay);
+        bool consoleActive = GetForegroundWindow() == consoleWindow;
+        if (consoleActive)
+        {
+            ShowWindow(hWndOverlay, SW_HIDE);
+        }
+        else
+        {
+            ShowWindow(hWndOverlay, SW_SHOW);
+            if (targetWindow)
+                SetOverlayToTarget(targetWindow, hWndOverlay);
+            SetWindowPos(hWndOverlay, HWND_TOPMOST, 0, 0, 0, 0,
+                SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+        }
         // ✅ Windows-Nachrichten verarbeiten
         while (PeekMessage(&msg, NULL, 0U, 0U, PM_REMOVE)) {
             TranslateMessage(&msg);
