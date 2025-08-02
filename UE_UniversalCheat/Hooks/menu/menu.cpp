@@ -5,16 +5,95 @@
 #include "../../Helper/Cheese.h"
 #include "../../Helper/Helper.h"
 #include "../../ImGui/imgui_internal.h"
+#include <atomic>
+#include <thread>
+#include <chrono>
+#include <mutex>
 
 namespace ig = ImGui;
 
-static int ValidEntsLevel = 0;
-static int AllEntsLevel = 0;
+enum class ActorArrayOffset {
+    PrimaryActors = 0x98,
+    SecondaryActors = 0xA8
+};
 
-static int selectedLevelIndex = 0;
-static std::vector<std::string> levelNames;
-static bool PawnFilterEnabled = true;
+static std::atomic<int> ValidEntsLevel{0};
+static std::atomic<int> AllEntsLevel{0};
 
+static std::atomic<int> selectedLevelIndex{0};
+static std::atomic<ActorArrayOffset> selectedArrayOffset{ActorArrayOffset::PrimaryActors};
+static std::atomic<bool> PawnFilterEnabled{true};
+static std::atomic<float> Distcap{3000.0f};
+static std::atomic<int> ScreenW{0};
+static std::atomic<int> ScreenH{0};
+
+static std::atomic<bool> runEntityThread{true};
+static std::thread entityThread;
+
+static void EntityUpdateLoop()
+{
+    Cam gameCam;
+    int scanCounter = 0;
+    constexpr int scanInterval = 20;
+    while (runEntityThread)
+    {
+        SDK::UEngine* Engine = SDK::UEngine::GetEngine();
+        SDK::UWorld* World = SDK::UWorld::GetWorld();
+        if (!World && Engine && Engine->GameViewport)
+            World = Engine->GameViewport->World;
+        SDK::APlayerController* MyController = nullptr;
+        bool worldValid = SimpleESP::IsWorldValid(World);
+        if (worldValid)
+            MyController = World->OwningGameInstance->LocalPlayers[0]->PlayerController;
+
+        if (worldValid && MyController)
+        {
+            int lvlIdx = selectedLevelIndex.load();
+            SDK::ULevel* CurrentLevel = World->Levels.IsValidIndex(lvlIdx) ? World->Levels[lvlIdx] : nullptr;
+            if (CurrentLevel)
+            {
+                ActorArrayOffset arrOff = selectedArrayOffset.load();
+                auto* ActorArray = reinterpret_cast<SDK::TArray<SDK::AActor*>*>(
+                    reinterpret_cast<std::uintptr_t>(CurrentLevel) + static_cast<std::uintptr_t>(arrOff));
+                if (PointerChecks::IsValidPtr(ActorArray, "ActorArray") && ActorArray->IsValid())
+                {
+                    gameCam.UpdateCam(MyController->PlayerCameraManager);
+
+                    if (++scanCounter % scanInterval == 0)
+                    {
+                        AllEntsLevel = ActorArray->Num();
+                        for (int i = 0; i < ActorArray->Num(); ++i)
+                        {
+                            if (SDK::AActor* a = (*ActorArray)[i])
+                            {
+                                if (!PointerChecks::IsValidPtr(a, "AActor") ||
+                                    !PointerChecks::IsValidPtr(a->Class, "ActorClass"))
+                                    continue;
+
+                                if (PawnFilterEnabled.load() && !a->IsA(SDK::APawn::StaticClass()))
+                                    continue;
+
+                                g_EntityCache.Add(a);
+                            }
+                        }
+                    }
+
+                    g_EntityCache.Refresh(gameCam.CamPos,
+                        gameCam.Rotation,
+                        gameCam.Fov,
+                        ScreenW.load(),
+                        ScreenH.load(),
+                        Distcap.load(),
+                        PawnFilterEnabled.load());
+
+                    ValidEntsLevel = static_cast<int>(g_EntityCache.DrawList().size());
+                }
+            }
+        }
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    }
+}
 
 namespace Menu {
     void InitializeContext(HWND hwnd) {
@@ -35,6 +114,14 @@ namespace Menu {
 
         ImGuiIO& IO = ImGui::GetIO();
         ImDrawList* drawlist = ImGui::GetForegroundDrawList();
+        ScreenW = static_cast<int>(IO.DisplaySize.x);
+        ScreenH = static_cast<int>(IO.DisplaySize.y);
+
+        static std::once_flag threadFlag;
+        std::call_once(threadFlag, []() {
+            entityThread = std::thread(EntityUpdateLoop);
+            entityThread.detach();
+        });
 
         // Prüfe Engine, World, Controller
         SDK::UEngine* Engine = SDK::UEngine::GetEngine();
@@ -79,23 +166,7 @@ namespace Menu {
 
 
 
-        enum class ActorArrayOffset {
-            PrimaryActors = 0x98,
-            SecondaryActors = 0xA8
-        };
-        
         ImGui::Begin("MainMenu");
-
-        // FEHLERANZEIGE bei fehlender World/Controller
-        if (!World)
-            ImGui::TextColored(ImVec4(1, 0, 0, 1), "[!] UWorld nicht gefunden!");
-        if (!worldValid)
-            ImGui::TextColored(ImVec4(1, 0.5, 0, 1), "[!] World->OwningGameInstance oder LocalPlayers invalid!");
-        if (worldValid && !MyController)
-            ImGui::TextColored(ImVec4(1, 1, 0, 1), "[!] PlayerController nicht gefunden!");
-        static ActorArrayOffset selectedArrayOffset = ActorArrayOffset::PrimaryActors;
-
-        
 
         // FEHLERANZEIGE bei fehlender World/Controller
         if (!World)
@@ -107,16 +178,18 @@ namespace Menu {
 
         ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / IO.Framerate, IO.Framerate);
 
-        static float Distcap = 3000.0f;        
-        ImGui::SliderFloat("ESP Distance", &Distcap, 2.f, 20000.0f);
+        float distTemp = Distcap.load();
+        if (ImGui::SliderFloat("ESP Distance", &distTemp, 2.f, 20000.0f))
+            Distcap = distTemp;
 
         
 
         // Level-Auswahl nur bei gültigen Daten
-        if (worldValid && LevelArr.size() > 0 && selectedLevelIndex < LevelArr.size()) {
-            if (ImGui::BeginCombo("Select Level", levelNames[selectedLevelIndex].c_str())) {
+        int selIdx = selectedLevelIndex.load();
+        if (worldValid && LevelArr.size() > 0 && selIdx < static_cast<int>(LevelArr.size())) {
+            if (ImGui::BeginCombo("Select Level", levelNames[selIdx].c_str())) {
                 for (int i = 0; i < levelNames.size(); i++) {
-                    bool isSelected = (selectedLevelIndex == i);
+                    bool isSelected = (selIdx == i);
                     if (ImGui::Selectable(levelNames[i].c_str(), isSelected))
                         selectedLevelIndex = i;
                     if (isSelected)
@@ -128,7 +201,8 @@ namespace Menu {
 
         // Actor Array Auswahl (immer anzeigen)
         const char* arrayOptions[] = { "Primary Actors (0x98)", "Secondary Actors (0xA8)" };
-        int currentSelection = (selectedArrayOffset == ActorArrayOffset::PrimaryActors) ? 0 : 1;
+        ActorArrayOffset arrOff = selectedArrayOffset.load();
+        int currentSelection = (arrOff == ActorArrayOffset::PrimaryActors) ? 0 : 1;
         if (ImGui::BeginCombo("Select Actor Array", arrayOptions[currentSelection])) {
             for (int i = 0; i < IM_ARRAYSIZE(arrayOptions); i++) {
                 bool isSelected = (currentSelection == i);
@@ -140,9 +214,11 @@ namespace Menu {
             ImGui::EndCombo();
         }
 
-        ImGui::Text("All Entities: %d", AllEntsLevel);
-        ImGui::Text("Valid Entities: %d", ValidEntsLevel);
-        ImGui::Checkbox("Render only Pawns", &PawnFilterEnabled);
+        ImGui::Text("All Entities: %d", AllEntsLevel.load());
+        ImGui::Text("Valid Entities: %d", ValidEntsLevel.load());
+        bool pawnTemp = PawnFilterEnabled.load();
+        if (ImGui::Checkbox("Render only Pawns", &pawnTemp))
+            PawnFilterEnabled = pawnTemp;
 
         // Cheats anzeigen, aber nur togglen wenn initialisiert
         for (auto& cheat : Cheese::GetCheeseList()) {
@@ -155,60 +231,15 @@ namespace Menu {
         ImGui::End();
 
         // ESP nur bei validen Daten
-        if (worldValid && MyController && LevelArr.size() > 0 && selectedLevelIndex < LevelArr.size()) {
-            SDK::ULevel* CurrentLevel = LevelArr[selectedLevelIndex];
-            auto* ActorArray = reinterpret_cast<SDK::TArray<SDK::AActor*>*>(
-                reinterpret_cast<std::uintptr_t>(CurrentLevel) +
-                static_cast<std::uintptr_t>(selectedArrayOffset));
-
-            bool actorArrayValid = PointerChecks::IsValidPtr(ActorArray, "ActorArray") &&
-                ActorArray->IsValid();
-
-            // 1)  Kamera updaten (für Distanzberechnung)
-            static Cam gameCam;
-            gameCam.UpdateCam(MyController->PlayerCameraManager);
-
-            // 2)  Actor-Cache synchronisieren (nur gelegentlich scannen)
-            static int scanCounter = 0;
-            constexpr int scanInterval = 20; // alle 20 Frames neuen Actors suchen
-
-            if (actorArrayValid && (++scanCounter % scanInterval == 0))
-            {
-                AllEntsLevel = ActorArray->Num();
-                for (int i = 0; i < ActorArray->Num(); ++i)
-                {
-                    if (SDK::AActor* a = (*ActorArray)[i])
-                    {
-                        if (!PointerChecks::IsValidPtr(a, "AActor") ||
-                            !PointerChecks::IsValidPtr(a->Class, "ActorClass"))
-                            continue;
-
-                        if (PawnFilterEnabled && !a->IsA(SDK::APawn::StaticClass()))
-                            continue;
-
-                        g_EntityCache.Add(a); // Cache nur potenziell relevante Actor
-                    }
-                }
-            }
-
-            // 3)  Cache-Refresh (nur dynamische Daten)
-            ImGuiIO& io = ImGui::GetIO();
-            g_EntityCache.Refresh(gameCam.CamPos,
-                gameCam.Rotation,
-                gameCam.Fov,
-                static_cast<int>(io.DisplaySize.x),
-                static_cast<int>(io.DisplaySize.y),
-                Distcap,
-                PawnFilterEnabled);
-
+        if (worldValid && MyController)
+        {
             auto& dynList = g_EntityCache.DrawList();
-            auto& statList = g_EntityCache.StaticDrawList();     // 1-zu-1 parallel
-            ValidEntsLevel = static_cast<int>(dynList.size());
+            auto& statList = g_EntityCache.StaticDrawList();
 
             for (size_t i = 0; i < dynList.size(); ++i)
             {
                 const auto& dyn = dynList[i];
-                const auto* st = statList[i];                   // garantiert vorhanden
+                const auto* st = statList[i];
 
                 std::string distanceText = std::to_string(dyn.distance);
                 distanceText = distanceText.substr(0, distanceText.find('.') + 2);
@@ -216,8 +247,7 @@ namespace Menu {
                 drawlist->AddText(ImVec2(CalcMiddlePos(dyn.screenPos.x, (distanceText + "m").c_str()), dyn.screenPos.y + 15), st->color, (distanceText + "m").c_str());
             }
 
-
-            // 4)  restliche Features (Cheats etc.)
+            // restliche Features (Cheats etc.)
             Cheese::ApplyCheese();
         }
     }
